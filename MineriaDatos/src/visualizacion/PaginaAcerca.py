@@ -21,23 +21,28 @@ class PaginaAcerca:
         como parte de su aprendizaje y desarrollo de habilidades en el campo del análisis de datos a gran escala.
         """)
 
-        st.markdown("### 👩‍💻 Autores:")
-        st.markdown("""
-        - 👩‍🎓 Nubia Brenes Valerín  
-        - 👨‍🎓 Pablo Marín Castillo
-        - 👨‍🎓 Alejandro 
-        - 👨‍🎓 Fiorella 
-        - 👨‍🎓 Gilary 
-        - 👨‍🎓 Fernando 
-        - 👨‍🎓 Jhoel
-        """)
+        # Crear dos columnas para mostrar Autores y Herramientas lado a lado
+        col1, col2 = st.columns(2)
 
-        st.markdown("### 🛠️ Herramientas y Tecnologías Utilizadas:")
-        st.markdown("""
-        - 🐍 **Lenguaje de Programación:** Python  
-        - 📊 **Librerías de Análisis de Datos:** Pandas, NumPy  
-        - 📈 **Visualización de Datos:** Matplotlib, Seaborn, Plotly  
-        - 🚀 **Framework/Entorno:** Streamlit  
-        - 🗄️ **Base de Datos:** PostgreSQL  
-        - 💻 **Otras Herramientas:** Jupyter Notebooks, Microsoft Azure
-        """)
+        with col1:
+            st.markdown("### 👩‍💻 Autores:")
+            st.markdown("""
+                   - 👩‍🎓 Nubia Brenes Valerín  
+                   - 👨‍🎓 Pablo Marín Castillo
+                   - 👨‍🎓 Alejandro Quesada Leiva
+                   - 👨‍🎓 Fiorella 
+                   - 👨‍🎓 Gilary Granados Calvo
+                   - 👨‍🎓 Fernando Contreras Artavia
+                   - 👨‍🎓 Jhoel Barquero Carvajal
+                   """)
+
+        with col2:
+            st.markdown("### 🛠️ Herramientas y Tecnologías Utilizadas:")
+            st.markdown("""
+                   - 🐍 **Lenguaje de Programación:** Python  
+                   - 📊 **Librerías de Análisis de Datos:** Pandas, NumPy  
+                   - 📈 **Visualización de Datos:** Matplotlib, Seaborn, Plotly  
+                   - 🚀 **Framework/Entorno:** Streamlit  
+                   - 🗄️ **Base de Datos:** PostgreSQL  
+                   - 💻 **Otras Herramientas:** Jupyter Notebooks, Microsoft Azure
+                   """)
