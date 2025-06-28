@@ -16,8 +16,8 @@ class PaginaAcerca:
         st.title("ℹ️ Acerca de esta aplicación")
 
         st.markdown("""
-        🧠 Esta aplicación es una demostración del trabajo realizado por estudiantes del curso **BD-152 Mineria de datos I** del  
-        🎓 **Diplomado en Big Data** del **Colegio Universitario de Cartago (CUC)** durante el **II Cuatrimestre 2025**,  
+         Esta aplicación es una demostración del trabajo realizado por estudiantes del curso **BD-152 Mineria de datos I** del  
+         **Diplomado en Big Data** del **Colegio Universitario de Cartago (CUC)** durante el **II Cuatrimestre 2025**,  
         como parte de su aprendizaje y desarrollo de habilidades en el campo del análisis de datos a gran escala.
         """)
 
@@ -27,13 +27,13 @@ class PaginaAcerca:
         with col1:
             st.markdown("### 👩‍💻 Autores:")
             st.markdown("""
-                   - 👩‍🎓 Nubia Brenes Valerín  
-                   - 👨‍🎓 Pablo Marín Castillo
-                   - 👨‍🎓 Alejandro Quesada Leiva
-                   - 👨‍🎓 Fiorella 
-                   - 👨‍🎓 Gilary Granados Calvo
-                   - 👨‍🎓 Fernando Contreras Artavia
-                   - 👨‍🎓 Jhoel Barquero Carvajal
+                   - Nubia Brenes Valerín  
+                   - Pablo Marín Castillo
+                   - Alejandro Quesada Leiva
+                   - Fiorella Abarca Valverde
+                   - Gilary Granados Calvo
+                   - Fernando Contreras Artavia
+                   - Jhoel Barquero Carvajal
                    """)
 
         with col2:

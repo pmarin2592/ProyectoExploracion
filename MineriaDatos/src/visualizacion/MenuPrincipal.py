@@ -23,22 +23,24 @@ from src.visualizacion.PaginaKmeans import PaginaKmeans
 class MenuPrincipal:
     def __init__(self, base_dir):
         self.__menu ={
-                    "🗂️ Datos":PaginaDatos(),                               # Representa archivos/datasets
-                    "📈 Estadísticas Básicas": PaginaEstadisticas(),        # Para resúmenes y gráficos básicos
-                    "🧮 ACP (Componentes Principales)": PaginaACP(),        # Matemática / reducción dimensional
-                    "🔠 AFC (Correspondencias)": PaginaAFC(),               # Relacionado con datos categóricos
-                    "🧬 Clúster Jerárquico": PaginaCluster(),               # Jerarquía y análisis agrupado
-                    "🔢 K-Means": PaginaKmeans(),                           # Algoritmo de clustering
-                    "💡 Acerca de": PaginaAcerca()                          # Información general / autores / contexto
+                    "Datos":PaginaDatos(),                               # Representa archivos/datasets
+                    "Estadísticas Básicas": PaginaEstadisticas(),        # Para resúmenes y gráficos básicos
+                    "ACP (Componentes Principales)": PaginaACP(),        # Matemática / reducción dimensional
+                    "AFC (Correspondencias)": PaginaAFC(),               # Relacionado con datos categóricos
+                    "Clúster Jerárquico": PaginaCluster(),               # Jerarquía y análisis agrupado
+                    "K-Means": PaginaKmeans(),                           # Algoritmo de clustering
+                    "Acerca de": PaginaAcerca()                          # Información general / autores / contexto
                 }
         self.__base_dir = base_dir
         # Inicializar la página seleccionada si no existe
         if 'pagina_seleccionada' not in st.session_state:
-            st.session_state.pagina_seleccionada = "🗂️ Datos"
+            st.session_state.pagina_seleccionada = "Datos"
 
     def menu_principal(self):
+        if 'analisis_generado' not in st.session_state:
+            st.session_state.analisis_generado = False
         # Abre la imagen desde la misma carpeta que main.py
-        logo_path = os.path.join(self.__base_dir, "logo-cuc.png")
+        logo_path = os.path.join(self.__base_dir, "reco_mind_2.png")
         logo = Image.open(logo_path)
 
         st.set_page_config(page_title="Aplicativo de Mineria", layout="wide", page_icon="📊")
@@ -100,33 +102,52 @@ class MenuPrincipal:
 
         # Diccionario con descripciones para cada opción
         descripciones = {
-            "🗂️ Datos": "Gestión de datasets",
-            "📈 Estadísticas Básicas": "Análisis exploratorio",
-            "🧮 ACP (Componentes Principales)": "Reducción dimensional",
-            "🔠 AFC (Correspondencias)": "Análisis categórico",
-            "🧬 Clúster Jerárquico": "Agrupamiento jerárquico",
-            "🔢 K-Means": "Clustering K-Means",
-            "💡 Acerca de": "Información del proyecto"
+            "Datos": "Gestión de datasets",
+            "Estadísticas Básicas": "Análisis exploratorio",
+            "ACP (Componentes Principales)": "Reducción dimensional",
+            "AFC (Correspondencias)": "Análisis categórico",
+            "Clúster Jerárquico": "Agrupamiento jerárquico",
+            "K-Means": "Clustering K-Means",
+            "Acerca de": "Información del proyecto"
         }
+
+        paginas_bloqueables = [
+            "Estadísticas Básicas",
+            "ACP (Componentes Principales)",
+            "AFC (Correspondencias)",
+            "Clúster Jerárquico",
+            "K-Means"
+        ]
 
         # Crear botones para cada opción del menú
         for nombre_opcion in self.__menu.keys():
             es_activo = st.session_state.pagina_seleccionada == nombre_opcion
             descripcion = descripciones.get(nombre_opcion, "")
+            requiere_analisis = nombre_opcion in paginas_bloqueables
+            deshabilitado = requiere_analisis and not st.session_state.analisis_generado
 
             # Contenedor con clase condicional para botón activo
             if es_activo:
                 st.sidebar.markdown('<div class="menu-button-active">', unsafe_allow_html=True)
 
             # Botón principal
-            if st.sidebar.button(nombre_opcion, key=f"btn_{nombre_opcion}",
-                               use_container_width=True):
-                st.session_state.pagina_seleccionada = nombre_opcion
-                st.rerun()
+            boton = st.sidebar.button(
+                nombre_opcion,
+                key=f"btn_{nombre_opcion}",
+                disabled=deshabilitado,
+                use_container_width=True
+            )
 
             # Descripción debajo del botón
-            st.sidebar.markdown(f'<div class="menu-description">{descripcion}</div>',
-                              unsafe_allow_html=True)
+            if deshabilitado:
+                st.sidebar.markdown(f'<div class="menu-description">🔒 Requiere análisis previo</div>',
+                                    unsafe_allow_html=True)
+            else:
+                st.sidebar.markdown(f'<div class="menu-description">{descripcion}</div>', unsafe_allow_html=True)
+
+            if boton:
+                st.session_state.pagina_seleccionada = nombre_opcion
+                st.rerun()
 
             if es_activo:
                 st.sidebar.markdown('</div>', unsafe_allow_html=True)
