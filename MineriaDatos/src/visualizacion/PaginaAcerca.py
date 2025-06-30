@@ -6,6 +6,7 @@ Objetivo: Clase que mantiene la pagina para mostrar los datos del app e integran
 Cambios:
 
     1. Creacion de la clase y cascarazon visual pmarin 24-06-2025
+    2. Colocar info en dos columnas para aprovechar espacio en pantalla aquesada 28-06-2025
 """
 import streamlit as st
 

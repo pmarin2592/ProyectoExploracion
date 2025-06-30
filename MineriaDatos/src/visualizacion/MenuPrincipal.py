@@ -6,6 +6,7 @@ Objetivo: Clase que mantiene el menu principal del proyecto
 Cambios:
 
     1. Creacion de la clase y cascarazon visual pmarin 24-06-2025
+    2. Cambios en el menu, de radiobutton a botones con estilos css aquesada 28-06-2025
 """
 import os
 import streamlit as st

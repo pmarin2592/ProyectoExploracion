@@ -6,6 +6,11 @@ Objetivo: Clase que mantiene la pagina de la carga de datos
 Cambios:
 
     1. Creacion de la clase y cascarazon visual pmarin 24-06-2025
+    2. Validar que haya datos seleccionados para habilitar opciones y
+    mantener por medio de variable de entorno st.session_state.analisis_generado
+    la tabla que muestra la informacion, aun navegando por las diversas pantallas
+    aquesada 28-06-2025
+
 """
 
 import streamlit as st
