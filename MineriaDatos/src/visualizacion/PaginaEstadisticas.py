@@ -8,8 +8,9 @@ Cambios:
     1. Creacion de la clase y cascarazon visual pmarin 24-06-2025
     2. Implementación completa de estadísticas básicas usando session_state aquesada 19-07-2025
 """
-
+import pandas as pd
 import streamlit as st
+<<<<<<< Updated upstream
 import pandas as pd
 import numpy as np
 import plotly.express as px
@@ -302,3 +303,233 @@ class PaginaEstadisticas:
             total_memory = memory_usage.sum() / 1024**2
             st.write(f"• Total: {total_memory:.2f} MB")
             st.write(f"• Promedio por columna: {total_memory/len(df.columns):.2f} MB")
+=======
+import logging
+from src.eda.EstadisticasBasicasEda import EstadisticasBasicasEda
+# Configurar logging
+logging.basicConfig(level=logging.ERROR)
+logger = logging.getLogger(__name__)
+
+class PaginaEstadisticas:
+    def __init__(self):
+        self.eda = None
+
+    def mostrar_error(mensaje: str, tipo_error: str = "error"):
+        """
+        Muestra un mensaje de error en Streamlit
+
+        Args:
+            mensaje (str): Mensaje de error
+            tipo_error (str): Tipo de error (error, warning, info)
+        """
+        if tipo_error == "error":
+            st.error(f"❌ {mensaje}")
+        elif tipo_error == "warning":
+            st.warning(f"⚠️ {mensaje}")
+        elif tipo_error == "info":
+            st.info(f"ℹ️ {mensaje}")
+
+        logger.error(f"Error en Streamlit: {mensaje}")
+
+    def _mostrar_info_dataframe_streamlit(self):
+        """
+        Muestra información básica del DataFrame en Streamlit usando EstadisticasBasicasEda
+        con control de excepciones robusto
+
+        Args:
+            df (pd.DataFrame): El DataFrame a analizar
+        """
+        try:
+
+            # Crear instancia del analizador
+            eda = self.eda
+
+            # Título principal
+            st.header("📊 Información Básica del DataFrame")
+
+            # Obtener información básica con manejo de errores
+            try:
+                info_basica = eda.obtener_info_basica()
+
+                # Métricas principales en columnas
+                col1, col2, col3 = st.columns(3)
+
+                with col1:
+                    st.metric("Filas", f"{info_basica['filas']:,}")
+
+                with col2:
+                    st.metric("Columnas", info_basica['columnas'])
+
+                with col3:
+                    st.metric("Tamaño en memoria", f"{info_basica['memoria_mb']:.2f} MB")
+
+            except Exception as e:
+                self.mostrar_error(f"Error inesperado al obtener información básica: {str(e)}")
+                logger.exception(f"Error inesperado al obtener información básica: {str(e)}")
+                return
+
+            # Separador
+            st.divider()
+
+            # Primeras y últimas filas
+            col1, col2 = st.columns(2)
+
+            with col1:
+                st.subheader("🔝 Primeras 5 filas")
+                try:
+                    primeras_filas = eda.obtener_primeras_filas()
+                    st.dataframe(primeras_filas, use_container_width=True)
+                except Exception as e:
+                    self.mostrar_error(f"Error inesperado al obtener primeras filas: {str(e)}", "warning")
+                    logger.exception(f"Error inesperado al obtener primeras filas: {str(e)}")
+
+            with col2:
+                st.subheader("🔚 Últimas 5 filas")
+                try:
+                    ultimas_filas = eda.obtener_ultimas_filas()
+                    st.dataframe(ultimas_filas, use_container_width=True)
+                except Exception as e:
+                    self.mostrar_error(f"Error inesperado al obtener últimas filas: {str(e)}", "warning")
+                    logger.exception(f"Error inesperado al obtener últimas filas: {str(e)}")
+
+            # Información de tipos de datos
+            st.subheader("📋 Información de tipos de datos")
+
+            try:
+                tipos_info = eda.obtener_tipo_datos()
+
+                # Mostrar en un expander para ahorrar espacio
+                with st.expander("Ver información detallada de tipos de datos"):
+                    st.text(tipos_info['info_detallada'])
+
+                # Resumen de tipos de datos en formato más visual
+                st.write("**Resumen de tipos de datos:**")
+                for dtype, count in tipos_info['tipos_resumen'].items():
+                    st.write(f"- {dtype}: {count} columnas")
+
+
+            except Exception as e:
+                self.mostrar_error(f"Error inesperado al obtener información de tipos: {str(e)}", "warning")
+                logger.exception(f"Error inesperado al obtener información de tipos: {str(e)}")
+
+            # Nombres de columnas con información adicional
+            st.subheader("📝 Información de columnas")
+
+            try:
+                info_columnas = eda.obtener_info_columnas()
+                st.dataframe(info_columnas, use_container_width=True)
+
+                # Mostrar lista de columnas en formato compacto
+                with st.expander("Ver lista de nombres de columnas"):
+                    nombres_columnas = eda.obtener_nombres_columnas()
+                    st.write(nombres_columnas)
+
+            except Exception as e:
+                self.mostrar_error(f"Error inesperado al obtener información de columnas: {str(e)}", "warning")
+                logger.exception(f"Error inesperado al obtener información de columnas: {str(e)}")
+
+        except Exception as e:
+            self.mostrar_error(f"Error inesperado: {str(e)}")
+            logger.exception("Error inesperado en mostrar_info_dataframe_streamlit")
+
+    def _mostrar_analisis_completo(self):
+        """
+        Muestra análisis completo del DataFrame con control de excepciones
+
+        Args:
+            df (pd.DataFrame): El DataFrame a analizar
+        """
+        try:
+
+
+            eda = self.eda
+
+            # Crear tabs para organizar mejor la información
+            tab1, tab2, tab3, tab4 = st.tabs(
+                ["📊 Información Básica", "📈 Estadísticas", "❌ Valores Faltantes", "🔍 Análisis Detallado"])
+
+            with tab1:
+                self._mostrar_info_dataframe_streamlit()
+
+            with tab2:
+                st.subheader("📈 Estadísticas Descriptivas")
+                try:
+                    estadisticas = eda.obtener_resumen_estadisticas()
+                    if estadisticas is not None:
+                        st.dataframe(estadisticas, use_container_width=True)
+                    else:
+                        st.warning("No se pudieron generar estadísticas descriptivas")
+                except Exception as e:
+                    self.mostrar_error(f"Error inesperado al obtener estadísticas: {str(e)}", "warning")
+
+            with tab3:
+                st.subheader("❌ Valores Faltantes")
+                try:
+                    valores_faltantes = eda.obtener_valores_faltantes()
+
+                    if valores_faltantes is not None:
+                        # Verificar si hay valores faltantes válidos
+                        valores_numericos = valores_faltantes[valores_faltantes['Valores_faltantes'] != 'Error']
+
+                        if len(valores_numericos) > 0 and valores_numericos['Valores_faltantes'].sum() == 0:
+                            st.success("¡No hay valores faltantes en el DataFrame!")
+                        else:
+                            st.dataframe(valores_faltantes, use_container_width=True)
+
+                            # Visualizar valores faltantes solo si hay datos válidos
+                            try:
+                                if len(valores_numericos) > 0:
+                                    chart_data = valores_numericos[valores_numericos['Porcentaje'] != 'Error']
+                                    if len(chart_data) > 0:
+                                        st.bar_chart(chart_data.set_index('Columna')['Porcentaje'])
+                            except Exception as e:
+                                st.warning("No se pudo generar el gráfico de valores faltantes")
+                    else:
+                        st.warning("No se pudo obtener información de valores faltantes")
+
+                except Exception as e:
+                    self.mostrar_error(f"Error inesperado al obtener valores faltantes: {str(e)}", "warning")
+
+            with tab4:
+                st.subheader("🔍 Análisis Detallado")
+
+                # Información por columna
+                col1, col2 = st.columns(2)
+
+                with col1:
+                    st.write("**Distribución de tipos de datos:**")
+                    try:
+                        tipos_info = eda.obtener_tipo_datos()
+                        chart_data = pd.DataFrame(
+                            list(tipos_info['tipos_resumen'].items()),
+                            columns=['Tipo', 'Cantidad']
+                        )
+                        st.bar_chart(chart_data.set_index('Tipo'))
+                    except Exception as e:
+                        st.warning("No se pudo generar el gráfico de tipos de datos")
+
+                with col2:
+                    st.write("**Top 10 columnas con más valores únicos:**")
+                    try:
+                        info_columnas = eda.obtener_info_columnas()
+                        # Filtrar solo las columnas con valores numéricos válidos
+                        columnas_validas = info_columnas[info_columnas['Valores_únicos'] != 'N/A']
+                        if len(columnas_validas) > 0:
+                            top_unique = columnas_validas.nlargest(10, 'Valores_únicos')[['Columna', 'Valores_únicos']]
+                            st.dataframe(top_unique, use_container_width=True)
+                        else:
+                            st.warning("No se encontraron columnas con valores únicos válidos")
+                    except Exception as e:
+                        st.warning("No se pudo generar el top de columnas con valores únicos")
+
+        except Exception as e:
+            self.mostrar_error(f"Error inesperado en análisis completo: {str(e)}")
+            logger.exception("Error inesperado en mostrar_analisis_completo")
+
+
+    def render(self):
+        st.title("📊 Estadisticas Basicas")
+        if  self.eda is None:
+            self.eda =  st.session_state.eda
+            self._mostrar_info_dataframe_streamlit()
+>>>>>>> Stashed changes
