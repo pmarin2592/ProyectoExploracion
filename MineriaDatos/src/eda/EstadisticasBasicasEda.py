@@ -17,26 +17,26 @@ class EstadisticasBasicasEda:
         return self.eda.obtener_analisis_completo()
 
     def obtener_resumen_estadisticas(self):
-        return self.obtener_resumen_estadisticas()
+        return self.eda.obtener_resumen_estadistico()
 
     def obtener_valores_faltantes(self):
-        return self.obtener_valores_faltantes()
+        return self.eda.obetener_resumen_valores_faltantes()
 
     def obtener_tipo_datos(self):
-        return self.obtener_tipo_datos()
+        return self.eda.obtener_tipo_datos()
 
     def obtener_info_columnas(self):
-        return self.obtener_info_columnas()
+        return self.eda.obtener_info_columnas()
     def obtener_info_basica(self):
-        return self.obtener_info_basica()
+        return self.eda.obtener_info_basico()
 
     def obtener_primeras_filas(self):
-        return self.obtener_primeras_filas()
+        return self.eda.obtener_primeras_filas()
 
     def obtener_ultimas_filas(self):
-        return self.obtener_ultimas_filas()
+        return self.eda.obtener_ultimas_filas()
 
     def obtener_nombres_columnas(self):
-        return self.obtener_nombres_columnas()
+        return self.eda.obtener_nombres_columnas()
 
 
