@@ -7,7 +7,8 @@ Cambios:
 
     1. Creacion de la clase y cascarazon visual pmarin 24-06-2025
     2. Cambios en el menu, de radiobutton a botones con estilos css aquesada 28-06-2025
-    2. Centrado imagen,  aquesada 13-07-2025
+    3. Centrado imagen,  aquesada 13-07-2025
+    4. Se agregan nuevas opciones, aquesada 21-07-2025
 """
 import os
 import streamlit as st
@@ -20,6 +21,8 @@ from src.visualizacion.PaginaCluster import PaginaCluster
 from src.visualizacion.PaginaDatos import PaginaDatos
 from src.visualizacion.PaginaEstadisticas import PaginaEstadisticas
 from src.visualizacion.PaginaKmeans import PaginaKmeans
+from src.visualizacion.PaginaArbolDecision import PaginaArbolDecision
+from src.visualizacion.PaginaRegresion import PaginaRegresion
 
 
 class MenuPrincipal:
@@ -31,6 +34,8 @@ class MenuPrincipal:
                     "AFC (Correspondencias)": PaginaAFC(),               # Relacionado con datos categóricos
                     "Clúster Jerárquico": PaginaCluster(),               # Jerarquía y análisis agrupado
                     "K-Means": PaginaKmeans(),                           # Algoritmo de clustering
+                    "Árbol de decisión": PaginaArbolDecision(),             # Árbol decisión
+                    "Regresión": PaginaRegresion(),                      # Regresión
                     "Acerca de": PaginaAcerca()                          # Información general / autores / contexto
                 }
         self.__base_dir = base_dir
@@ -113,6 +118,8 @@ class MenuPrincipal:
             "AFC (Correspondencias)": "Análisis categórico",
             "Clúster Jerárquico": "Agrupamiento jerárquico",
             "K-Means": "Clustering K-Means",
+            "Árbol de decisión": "Árbol de decisión",  # Árbol decisión
+            "Regresión": "Regresión",
             "Acerca de": "Información del proyecto"
         }
 
@@ -121,7 +128,9 @@ class MenuPrincipal:
             "ACP (Componentes Principales)",
             "AFC (Correspondencias)",
             "Clúster Jerárquico",
-            "K-Means"
+            "K-Means",
+            "Árbol de decisión",
+            "Regresión",
         ]
 
         # Crear botones para cada opción del menú
