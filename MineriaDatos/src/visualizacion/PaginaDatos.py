@@ -19,6 +19,9 @@ import streamlit as st
 import pandas as pd
 import time
 
+from src.eda.EstadisticasBasicasEda import EstadisticasBasicasEda
+
+
 class PaginaDatos:
     def __init__(self):
         self.archivo_cargado = None
@@ -144,6 +147,7 @@ class PaginaDatos:
                             time.sleep(0.02)
                             progreso.progress(i, text=f"Analizando datos... {i}%")
 
+                        st.session_state.eda = EstadisticasBasicasEda(df)
                         st.success("✅ Análisis completado exitosamente.")
                         self.analisis_realizado = True
                         st.session_state.analisis_generado = True
