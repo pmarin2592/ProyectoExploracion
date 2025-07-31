@@ -18,7 +18,7 @@ Cambios:
 import streamlit as st
 import pandas as pd
 import time
-
+from src.helpers.UtilDataFrame import UtilDataFrame
 from src.eda.EstadisticasBasicasEda import EstadisticasBasicasEda
 
 
@@ -85,6 +85,11 @@ class PaginaDatos:
                     options=[",", ";", "\t"],
                     format_func=lambda x: f"{x}"
                 )
+                decimal = st.selectbox(
+                    "Selecciona el decimal del archivo:",
+                    options=[",", "."],
+                    format_func=lambda x: f"{x}"
+                )
             with col2:
                 archivo = st.file_uploader(
                     "Sube tu archivo (.csv o .xlsx)",
@@ -103,9 +108,9 @@ class PaginaDatos:
                     try:
                         # Leer según extensión
                         if nombre.lower().endswith('.csv'):
-                            df = pd.read_csv(archivo, delimiter=delimitador)
+                            df = pd.read_csv(archivo,decimal=decimal , delimiter=delimitador)
                         else:
-                            df = pd.read_excel(archivo, engine='openpyxl')
+                            df = pd.read_excel(archivo, decimal=decimal ,engine='openpyxl')
 
                         # Guardar en session_state
                         st.session_state.df_cargado = df
@@ -146,8 +151,8 @@ class PaginaDatos:
                         for i in range(1, 101):
                             time.sleep(0.02)
                             progreso.progress(i, text=f"Analizando datos... {i}%")
-
-                        st.session_state.eda = EstadisticasBasicasEda(df)
+                        numericas, categoricas = UtilDataFrame.obtener_tipos(df)
+                        st.session_state.eda = EstadisticasBasicasEda(df,numericas, categoricas)
                         st.success("✅ Análisis completado exitosamente.")
                         self.analisis_realizado = True
                         st.session_state.analisis_generado = True
