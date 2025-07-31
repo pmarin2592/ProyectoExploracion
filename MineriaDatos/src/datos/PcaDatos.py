@@ -29,7 +29,7 @@ class PcaDatos:
             raise 'Se requieren al menos 2 variables numéricas con datos válidos para PCA.'
         # Escalar los datos
         escalador = StandardScaler()
-        self.datos_escalados = escalador.fit_transform(datos)
+        self.datos_escalados = escalador.fit_transform(datos)self.datos_escalados = escalador.fit_transform(datos)self.datos_escalados = escalador.fit_transform(datos)self.datos_escalados = escalador.fit_transform(datos)Hey
         # Aplicar PCA
         self.pca = PCA()
         self.resultado_pca = self.pca.fit_transform(self.datos_escalados)
