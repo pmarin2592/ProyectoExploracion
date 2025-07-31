@@ -9,9 +9,9 @@ Objetivo: Clase enfocada a la muestra de datos para EDA
 from src.datos.EstadisticasBasicasDatos import EstadisticasBasicasDatos
 
 class EstadisticasBasicasEda:
-    def __init__(self, df):
+    def __init__(self, df,numericas, categoricas):
         self.df = df
-        self.eda = EstadisticasBasicasDatos(self.df)
+        self.eda = EstadisticasBasicasDatos(self.df,numericas, categoricas)
 
     def obtener_analisis_completo(self):
         return self.eda.obtener_analisis_completo()
@@ -39,4 +39,15 @@ class EstadisticasBasicasEda:
     def obtener_nombres_columnas(self):
         return self.eda.obtener_nombres_columnas()
 
+    def  obtener_analisis_distribucion(self,col):
+        return self.eda.obtener_analisis_distribucion(col)
+
+    def obtener_analisis_boxplot(self,col):
+        return self.eda.obtener_analisis_boxplot(col)
+
+    def obtener_analisis_correlaccion(self):
+        return self.eda.obtener_analisis_correlaccion()
+
+    def obtener_analisis_univariados(self, col):
+        return self.eda.obtener_analisis_univariados(col)
 
