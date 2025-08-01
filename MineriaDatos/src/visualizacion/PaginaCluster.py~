@@ -16,7 +16,7 @@ class PaginaCluster:
         self.df = None
         if 'eda' in st.session_state and st.session_state['eda'] is not None:
             try:
-                self.df = st.session_state['eda'].df  # <- accedemos al DataFrame real
+                self.df = st.session_state['eda']
             except Exception as e:
                 st.error(f"Error al cargar datos del EDA: {e}")
 
