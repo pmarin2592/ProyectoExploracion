@@ -181,3 +181,4 @@ class Clustering:
         ax.legend(loc='upper right', bbox_to_anchor=(1.1, 1.1))
 
         return fig
+
