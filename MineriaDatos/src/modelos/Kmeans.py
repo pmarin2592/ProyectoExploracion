@@ -153,12 +153,9 @@ class Clustering:
         return fig
 
     def graficar_radar_por_cluster(self, etiquetas, titulo="Radar por Cluster"):
-        """
-        Grafica gráfico radar con promedio de variables por cluster
-        etiquetas: etiquetas cluster asignadas
-        titulo: título para la gráfica
-        Retorna figura matplotlib
-        """
+        import numpy as np
+        import matplotlib.pyplot as plt
+
         df = self.df_numerico.copy()
         df["cluster"] = etiquetas
         promedios = df.groupby("cluster").mean()
@@ -166,20 +163,21 @@ class Clustering:
         categorias = list(promedios.columns)
         N = len(categorias)
         angulos = np.linspace(0, 2 * np.pi, N, endpoint=False).tolist()
-        angulos += angulos[:1]
+        angulos += angulos[:1]  # cerrar el círculo
 
-        fig, ax = plt.subplots(figsize=(8, 6), subplot_kw=dict(polar=True))
+        fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(polar=True))
 
-        for i, row in promedios.iterrows():
-            valores = row.tolist()
-            valores += valores[:1]
-            ax.plot(angulos, valores, label=f"Cluster {i}")
-            ax.fill(angulos, valores, alpha=0.1)
+        for cluster, valores in promedios.iterrows():
+            datos = valores.tolist() + [valores[0]]
+            ax.plot(angulos, datos, label=f"Cluster {cluster}")
+            ax.fill(angulos, datos, alpha=0.25)
 
-        ax.set_xticks(angulos[:-1])
-        ax.set_xticklabels(categorias)
-        ax.set_title(titulo)
-        ax.legend(loc='upper right', bbox_to_anchor=(1.3, 1.1))
-        fig.tight_layout()
+        # Estética
+        ax.set_theta_offset(np.pi / 2)
+        ax.set_theta_direction(-1)
+        ax.set_thetagrids(np.degrees(angulos[:-1]), categorias)
+        ax.set_yticklabels([])  # ❌ Oculta los números del eje radial
+        ax.set_title(titulo, fontsize=14)
+        ax.legend(loc='upper right', bbox_to_anchor=(1.1, 1.1))
 
         return fig
