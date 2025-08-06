@@ -28,7 +28,7 @@ class PaginaDatos:
         self.analisis_realizado = False
 
     def _obtener_tipo_dato_legible(self, tipo_pandas):
-        """Convierte el tipo de dato de pandas a una descripción más legible"""
+        #Convierte el tipo de dato de pandas a una descripción más legible
         tipo_str = str(tipo_pandas)
 
         if 'int' in tipo_str:
