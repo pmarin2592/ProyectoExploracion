@@ -1,12 +1,15 @@
-"""
+'''
 Clase: PaginaKmeans
 
 Objetivo: Clase que mantiene la página para visualización del análisis de clustering K-means
-"""
+'''
 
 import streamlit as st
 import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 from modelos.Kmeans import Kmeans, Clustering
+import plotly.graph_objects as go
 
 
 class PaginaKmeans:
@@ -15,7 +18,7 @@ class PaginaKmeans:
         self.cluster_manual = None
         self.kmeans_obj = None
 
-        # Verificar si el dataset está cargado globalmente
+        # Verificar si el dataset está cargado localmente
         if hasattr(st.session_state, 'df_cargado') and st.session_state.df_cargado is not None:
             self.df = st.session_state.df_cargado
             self.tiene_datos = True
@@ -43,25 +46,33 @@ class PaginaKmeans:
             st.warning("Error al escalar las variables numéricas.")
             return
 
-        self.kmeans_obj = Kmeans(datos_escalados)  # Corrección de mayúscula en Kmeans
+        self.kmeans_obj = Kmeans(datos_escalados)
 
         # ---------- K-means automático ----------
         st.subheader("Análisis K-means Automático")
 
         inercias = self.kmeans_obj.evaluar_varios_k()
         fig_codo = self.kmeans_obj.graficar_metricas(inercias)
-        st.pyplot(fig_codo)
 
-        k_opt = st.slider("Seleccione el número de clusters (K)", 2, 10, 3)
-        st.info(f"Has seleccionado {k_opt} clusters para aplicar K-means.")
+        # 🔄 Mostrar gráfico de codo interactivo
+        st.plotly_chart(fig_codo, use_container_width=True)
+
+        # Estimar K óptimo automáticamente con heurística simple (codo)
+        deltas = [inercias[i] - inercias[i + 1] for i in range(len(inercias) - 1)]
+        if deltas:
+            k_opt = deltas.index(max(deltas)) + 2  # +2 porque el K inicial suele ser 2
+        else:
+            k_opt = 3  # fallback por si no se puede calcular
+
+        st.info(f"Se ha detectado automáticamente {k_opt} clusters como óptimos para aplicar K-means.")
 
         modelo_final, etiquetas_kmeans = self.kmeans_obj.entrenar(k_opt)
         self.df['Cluster_KMeans'] = etiquetas_kmeans
 
         st.dataframe(self.df[['Cluster_KMeans'] + columnas_numericas].head())
 
-        # ---------- Clustering manual (Jerárquico) ----------
-        st.subheader("Clustering Manual (Jerárquico)")
+        # ---------- Clustering manual ----------
+        st.subheader("Clustering Manual")
 
         k_cluster = st.slider("Elige número de clusters para el análisis manual", 2, 10, 3, key="slider_clustering")
         resultados = self.cluster_manual.clustering_kmeans(k=k_cluster)
@@ -69,11 +80,8 @@ class PaginaKmeans:
         self.df['Cluster_Manual'] = resultados['etiquetas']
 
         fig_clusters = self.cluster_manual.graficar_clusters_kmeans(resultados['etiquetas'])
-        st.pyplot(fig_clusters)
+
+        # 🔄 Reemplazo de matplotlib por Plotly
+        st.plotly_chart(fig_clusters, use_container_width=True)
 
         st.dataframe(self.df[['Cluster_Manual'] + columnas_numericas].head())
-
-        # Gráfico radar para clusters manuales
-        st.subheader("Perfil tipo radar por Cluster (Manual)")
-        fig_radar = self.cluster_manual.graficar_radar_por_cluster(resultados['etiquetas'], titulo="Radar - Clustering Manual")
-        st.pyplot(fig_radar)
