@@ -13,63 +13,43 @@ from scipy.spatial.distance import pdist, squareform
 from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
 from sklearn.preprocessing import StandardScaler
 from typing import Dict, List, Tuple
-from src.eda.EstadisticasBasicasEda import EstadisticasBasicasEda
+from src.eda.PcaEda import PcaEda
 
 
 class ClusterJerarquico:
-    def __init__(self, eda: EstadisticasBasicasEda):
-            self._eda = eda
-            self.cluster_data = None
-            self.cluster_data_scaled = None
-            self.numeric_cols = None
-            self.scaler = StandardScaler()
-            self.hierarchical_results = {}
-            self.optimal_k = None
-            self.final_labels = None
-            self.metrics_history = {}
-
-
-    def escalar_datos(self) -> Dict:
+    def __init__(self, pca_datos: PcaEda):
         """
-        Escala las columnas numéricas del DataFrame original.
-
-        Returns:
-            Dict con información sobre la preparación de datos
+        Inicializa el cluster jerárquico con los datos escalados desde PCA.
         """
-        try:
-            # Seleccionar solo columnas numéricas
-            self.numeric_cols = self._eda.select_dtypes(include=['number']).columns.tolist()
-            self.cluster_data = self._eda[self.numeric_cols].dropna()
+        if pca_datos.pca_datos.datos_escalados is None:
+            print("Los datos de PCA no han sido escalados. Ejecute limpiar_escalar_datos() primero.")
+            raise ValueError("Los datos de PCA no han sido escalados. Ejecute limpiar_escalar_datos() primero.")
+        self.cluster_data_scaled = pca_datos.pca_datos.datos_escalados
+        self.hierarchical_results = {}
+        self.optimal_k = None
+        self.final_labels = None
+        self.metrics_history = {}
 
-            # Escalado
-            self.cluster_data_scaled = self.scaler.fit_transform(self.cluster_data)
-
-            info = {
-                'n_samples': self.cluster_data_scaled.shape[0],
-                'n_features': self.cluster_data_scaled.shape[1],
-                'numeric_columns': self.numeric_cols,
-                'data_shape': self.cluster_data_scaled.shape
-            }
-            return info
-        except Exception as e:
-            raise ValueError(f"Error al escalar los datos: {str(e)}")
-
-    def plot_dendrograms(self, methods: List[str] = None, figsize: Tuple = (20, 15)) -> plt.Figure:
+    def plot_dendrograms(self, methods: List[str] = None, figsize: Tuple = (20, 15),
+                         show_cuts: bool = True) -> go.Figure:
         """
-        Crea dendrogramas para los métodos seleccionados.
+        Crea dendrogramas interactivos para los métodos seleccionados usando Plotly.
 
         Args:
             methods: Lista de métodos de linkage a usar
-            figsize: Tamaño de la figura
+            figsize: Tamaño de la figura (ancho, alto) - se convierte a píxeles
+            show_cuts: Si mostrar las líneas de corte para 2 y 3 clusters
 
         Returns:
-            Figura de matplotlib
+            Figura de Plotly interactiva
         """
-        if self.cluster_data_scaled is None:
-            self.prepare_data()
 
         if methods is None:
             methods = ['ward', 'complete', 'average', 'single']
+
+        # Convertir figsize a píxeles (aprox 100 píxeles por pulgada)
+        width = int(figsize[0] * 100)
+        height = int(figsize[1] * 100)
 
         # Calcular matrices de linkage para los métodos seleccionados
         for method in methods:
@@ -82,36 +62,115 @@ class ClusterJerarquico:
             self.hierarchical_results[method] = linkage_matrix
 
         # Crear subplots dinámicamente según número de métodos
-        # Crear subplots dinámicamente según número de métodos
         n_methods = len(methods)
         cols = 2
         rows = (n_methods + 1) // 2
 
-        fig, axes = plt.subplots(rows, cols, figsize=figsize)
+        # Crear títulos para cada subplot
+        subplot_titles = [f'Dendrograma - Método: {method.capitalize()}' for method in methods]
 
-        # Asegurar que `axes` sea iterable
-        if isinstance(axes, np.ndarray):
-            axes = axes.ravel()
-        else:
-            axes = [axes]
+        fig = make_subplots(
+            rows=rows,
+            cols=cols,
+            subplot_titles=subplot_titles,
+            vertical_spacing=0.15,
+            horizontal_spacing=0.08
+        )
+
+        # Colores para las líneas de corte
+        cut_colors = ['red', 'orange']
+        cut_labels = ['Corte para 2 clusters', 'Corte para 3 clusters']
 
         for idx, method in enumerate(methods):
+            row = (idx // cols) + 1
+            col = (idx % cols) + 1
+
             linkage_matrix = self.hierarchical_results[method]
 
-            dendrogram(linkage_matrix,
-                       ax=axes[idx],
-                       truncate_mode='lastp',
-                       p=30,
-                       leaf_rotation=90,
-                       leaf_font_size=8)
+            # Crear dendrograma usando scipy para obtener coordenadas
+            dendro_data = dendrogram(linkage_matrix,
+                                     truncate_mode='lastp',
+                                     p=30,
+                                     no_plot=True)
 
-            axes[idx].set_title(f'Dendrograma - Método: {method.capitalize()}')
-            axes[idx].set_xlabel('Índice de Muestra o (Tamaño del Cluster)')
-            axes[idx].set_ylabel('Distancia')
+            # Extraer coordenadas
+            x_coords = dendro_data['icoord']
+            y_coords = dendro_data['dcoord']
 
-        # Ocultar axes vacíos si hay menos que el total de subplots
-        for idx in range(n_methods, len(axes)):
-            axes[idx].set_visible(False)
+            # Agregar líneas del dendrograma
+            for i, (x, y) in enumerate(zip(x_coords, y_coords)):
+                fig.add_trace(
+                    go.Scatter(
+                        x=x, y=y,
+                        mode='lines',
+                        line=dict(color='blue', width=1.5),
+                        showlegend=False,
+                        hovertemplate='Distancia: %{y:.3f}<br>Posición: %{x}<extra></extra>'
+                    ),
+                    row=row, col=col
+                )
 
-        plt.tight_layout()
+            # Agregar líneas de corte si se solicita
+            if show_cuts:
+                # Calcular las distancias de corte
+                n_samples = linkage_matrix.shape[0] + 1
+
+                # Para 2 clusters: corte en la segunda fusión más grande
+                cut_2_clusters = linkage_matrix[n_samples - 3, 2]
+
+                # Para 3 clusters: corte en la tercera fusión más grande
+                cut_3_clusters = linkage_matrix[n_samples - 4, 2]
+
+                cuts = [cut_2_clusters, cut_3_clusters]
+
+                # Obtener rango x para las líneas horizontales
+                x_min = min([min(x) for x in x_coords])
+                x_max = max([max(x) for x in x_coords])
+                x_range = [x_min, x_max]
+
+                # Dibujar las líneas de corte
+                for cut_idx, (cut_distance, color, label) in enumerate(zip(cuts, cut_colors, cut_labels)):
+                    show_legend = (idx == 0)  # Solo mostrar leyenda en el primer subplot
+
+                    fig.add_trace(
+                        go.Scatter(
+                            x=x_range,
+                            y=[cut_distance, cut_distance],
+                            mode='lines',
+                            line=dict(color=color, width=2, dash='dash'),
+                            name=label,
+                            showlegend=show_legend,
+                            hovertemplate=f'{label}: %{{y:.3f}}<extra></extra>'
+                        ),
+                        row=row, col=col
+                    )
+
+            # Configurar ejes para cada subplot
+            fig.update_xaxes(
+                title_text='Índice de Muestra o (Tamaño del Cluster)',
+                row=row, col=col
+            )
+            fig.update_yaxes(
+                title_text='Distancia',
+                row=row, col=col
+            )
+
+        # Configuración general de la figura
+        fig.update_layout(
+            height=height,
+            width=width,
+            title_text="Dendrogramas - Clustering Jerárquico Interactivo",
+            title_x=0.5,
+            showlegend=True,
+            legend=dict(
+                orientation="h",
+                yanchor="bottom",
+                y=1.02,
+                xanchor="center",
+                x=0.5
+            ),
+            hovermode='closest'
+        )
+
         return fig
+
