@@ -12,9 +12,10 @@ Cambios:
     aquesada 28-06-2025
     3. Cambios de mejoras sugeridas, cambio en String, tooltip con info de la columna aquesada 07-07-2025
     4. Solucionado problema de actualización cuando cambia el delimitador - 07-07-2025
+    5. Cambios separador decimal aquesada 02-08-25
+
 
 """
-
 import streamlit as st
 import pandas as pd
 import time
@@ -97,32 +98,64 @@ class PaginaDatos:
                     key="uploader"
                 )
 
-            # Si se subió un archivo
+            # Guardar archivo en session_state si se subió uno nuevo
             if archivo is not None:
                 nombre = archivo.name
                 prev_name = st.session_state.get('file_name')
-                prev_delimitador = st.session_state.get('delimitador')
 
-                # Si es un archivo nuevo o cambia el delimitador:
-                if prev_name != nombre or prev_delimitador != delimitador:
-                    try:
-                        # Leer según extensión
-                        if nombre.lower().endswith('.csv'):
-                            df = pd.read_csv(archivo,decimal=decimal , delimiter=delimitador)
-                        else:
-                            df = pd.read_excel(archivo, decimal=decimal ,engine='openpyxl')
+                # Si es un archivo nuevo, guardarlo en session_state
+                if prev_name != nombre:
+                    st.session_state.archivo_bytes = archivo.read()
+                    st.session_state.file_name = nombre
+                    archivo.seek(0)  # Resetear el puntero para la primera lectura
 
-                        # Guardar en session_state
-                        st.session_state.df_cargado = df
-                        st.session_state.file_name = nombre
-                        st.session_state.delimitador = delimitador
-                        st.session_state.analisis_generado = False
+            # Verificar si necesitamos recargar los datos por cambios en parámetros
+            prev_delimitador = st.session_state.get('delimitador')
+            prev_decimal = st.session_state.get('decimal')
 
+            # Si hay un archivo cargado (nuevo o existente) y hay cambios en parámetros
+            if ('file_name' in st.session_state and
+                    (prev_delimitador != delimitador or prev_decimal != decimal or
+                     'df_cargado' not in st.session_state)):
+
+                try:
+                    nombre = st.session_state.file_name
+
+                    # Si tenemos el archivo actual, usarlo, sino usar los bytes guardados
+                    if archivo is not None and archivo.name == nombre:
+                        archivo_a_leer = archivo
+                    else:
+                        # Recrear el archivo desde los bytes guardados
+                        import io
+                        archivo_a_leer = io.BytesIO(st.session_state.archivo_bytes)
+
+                    # Leer según extensión con parámetros actuales
+                    if nombre.lower().endswith('.csv'):
+                        df = pd.read_csv(archivo_a_leer, decimal=decimal, delimiter=delimitador)
+                    else:
+                        df = pd.read_excel(archivo_a_leer, decimal=decimal, engine='openpyxl')
+
+                    # Actualizar en session_state
+                    st.session_state.df_cargado = df
+                    st.session_state.delimitador = delimitador
+                    st.session_state.decimal = decimal
+                    st.session_state.analisis_generado = False
+
+                    # Limpiar análisis previo
+                    if 'eda' in st.session_state:
+                        del st.session_state.eda
+
+                    # Mostrar mensaje solo si hubo cambios en parámetros
+                    if prev_delimitador != delimitador or prev_decimal != decimal:
+                        st.success(f"✅ Datos actualizados con nuevos delimitadores.")
+                    else:
                         st.success(f"✅ Archivo '{nombre}' cargado exitosamente.")
-                    except Exception as e:
-                        st.error(f"Error al cargar el archivo: {e}")
 
-                # Siempre asignar el df a self para mostrar
+                except Exception as e:
+                    st.error(f"Error al procesar el archivo: {e}")
+
+            # Siempre asignar el df a self para mostrar
+            if 'df_cargado' in st.session_state:
                 self.archivo_cargado = st.session_state.get('df_cargado')
 
             # Mostrar la tabla si existe df cargado
@@ -138,7 +171,7 @@ class PaginaDatos:
                 with col_stats2:
                     st.metric("📋 Columnas", len(df.columns))
                 with col_stats3:
-                    st.metric("📏 Tamaño", f"{df.memory_usage(deep=True).sum() / 1024**2:.1f} MB")
+                    st.metric("📏 Tamaño", f"{df.memory_usage(deep=True).sum() / 1024 ** 2:.1f} MB")
 
                 # Crear tabla con tooltips
                 self._crear_tabla_con_tooltips(df)
@@ -152,7 +185,7 @@ class PaginaDatos:
                             time.sleep(0.02)
                             progreso.progress(i, text=f"Analizando datos... {i}%")
                         numericas, categoricas = UtilDataFrame.obtener_tipos(df)
-                        st.session_state.eda = EstadisticasBasicasEda(df,numericas, categoricas)
+                        st.session_state.eda = EstadisticasBasicasEda(df, numericas, categoricas)
                         st.success("✅ Análisis completado exitosamente.")
                         self.analisis_realizado = True
                         st.session_state.analisis_generado = True

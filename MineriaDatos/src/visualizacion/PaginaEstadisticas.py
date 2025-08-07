@@ -7,6 +7,7 @@ Cambios:
     1. Creacion de la clase y cascarazon visual pmarin 24-06-2025
     2. Mejoras visuales y diseño moderno - Versión mejorada
     3. Optimización completa del código - Versión optimizada
+    4. Cambios en UI aquesada 02-08-25
 """
 import pandas as pd
 import streamlit as st
@@ -260,41 +261,6 @@ class PaginaEstadisticas:
         st.markdown("---")
         self._mostrar_info_columnas_detallada()
 
-    def _mostrar_vista_clasica(self) -> None:
-        """Muestra la vista clásica simplificada"""
-        st.header("📊 Información Básica del DataFrame")
-
-        # Información básica
-        info_basica = self.manejador_datos.obtener_info_basica_segura()
-        if info_basica:
-            col1, col2, col3 = st.columns(3)
-
-            with col1:
-                st.metric("Filas", f"{info_basica['filas']:,}")
-            with col2:
-                st.metric("Columnas", info_basica['columnas'])
-            with col3:
-                st.metric("Tamaño en memoria", f"{info_basica['memoria_mb']:.2f} MB")
-
-        st.divider()
-        self._mostrar_vista_previa_datos()
-
-        # Tipos de datos simplificado
-        st.subheader("📋 Información de tipos de datos")
-        tipos_resumen, _ = self.manejador_datos.obtener_tipos_datos_procesados()
-
-        if tipos_resumen:
-            for dtype, count in tipos_resumen.items():
-                st.write(f"- {dtype}: {count} columnas")
-
-        # Información de columnas
-        st.subheader("📝 Información de columnas")
-        try:
-            info_columnas = self.eda.obtener_info_columnas()
-            st.dataframe(info_columnas, use_container_width=True)
-        except Exception as e:
-            ComponentesUI.mostrar_error(f"Error al obtener información de columnas: {str(e)}", "warning")
-
     def _mostrar_analisis_completo(self) -> None:
         """Muestra análisis completo con tabs organizadas"""
         tab1, tab2, tab3, tab4, tab5 = st.tabs(
@@ -387,10 +353,6 @@ class PaginaEstadisticas:
 
     def render(self) -> None:
         """Método principal para renderizar la página de estadísticas"""
-        ComponentesUI.crear_titulo_principal(
-            "📊 Estadísticas Básicas",
-            "Análisis completo y visual de tus datos"
-        )
 
         if not self._inicializar_dependencias():
             return
@@ -404,8 +366,6 @@ class PaginaEstadisticas:
 
         # Mapeo de vistas a métodos
         vista_methods = {
-            TipoVista.MEJORADA.value: self._mostrar_vista_mejorada,
-            TipoVista.CLASICA.value: self._mostrar_vista_clasica,
             TipoVista.COMPLETA.value: self._mostrar_analisis_completo
         }
 
