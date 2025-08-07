@@ -19,8 +19,6 @@ logger = logging.getLogger(__name__)
 
 class TipoVista(Enum):
     """Enum para los tipos de vista disponibles"""
-    MEJORADA = "🚀 Vista Mejorada"
-    CLASICA = "📋 Vista Clásica"
     COMPLETA = "🔍 Análisis Completo"
 
 
