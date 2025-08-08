@@ -49,7 +49,7 @@ class PaginaArbolDecision:
             else:
                 n_bins = 5
 
-        # Columnas a excluir (como tenías originalmente)
+        # Columnas a excluir
         cols_a_excluir = st.multiselect(
             "Columnas a excluir:",
             options=[col for col in df.columns if col != target_col]
