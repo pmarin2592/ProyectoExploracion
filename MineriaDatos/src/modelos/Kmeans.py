@@ -4,6 +4,8 @@ Archivo: Kmeans.py
 Descripción: Clases para análisis de clustering K-means y clustering jerárquico manual,
 incluye escalamiento, entrenamiento, evaluación y visualización básica.
 """
+import plotly.graph_objects as go
+import plotly.express as px
 
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
@@ -13,7 +15,7 @@ import pandas as pd
 import numpy as np
 from src.datos.EstadisticasBasicasDatos import EstadisticasBasicasDatos
 
-# Importar métricas para clustering jerárquico
+
 from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
 
 class Kmeans:
@@ -46,22 +48,28 @@ class Kmeans:
 
     def graficar_metricas(self, inercias):
         """
-        Grafica el codo de Jambu para encontrar número óptimo de clusters k
-        Recibe lista de inercias
-        Retorna figura matplotlib
+        Grafica el codo de Jambú como gráfico interactivo de Plotly.
         """
-        k_range = range(2, len(inercias) + 2)
-        fig, ax = plt.subplots(figsize=(8, 6))
+        k_range = list(range(2, len(inercias) + 2))
 
-        ax.plot(k_range, inercias, 'bo-')
-        ax.set_title('Codo de Jambú (Número óptimo de clusters)')
-        ax.set_xlabel('Número de clusters (k)')
-        ax.set_ylabel('Inercia')
-        ax.grid(True)
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(
+            x=k_range,
+            y=inercias,
+            mode='lines+markers',
+            line=dict(color='royalblue'),
+            marker=dict(size=8),
+            name='Inercia'
+        ))
 
-        plt.tight_layout()
+        fig.update_layout(
+            title='📉 Codo de Jambú - Número óptimo de clusters',
+            xaxis_title='Número de clusters (k)',
+            yaxis_title='Inercia',
+            template='plotly_white',
+            height=500
+        )
         return fig
-
 
 class Clustering:
     def __init__(self, df):
@@ -152,33 +160,4 @@ class Clustering:
         fig.tight_layout()
         return fig
 
-    def graficar_radar_por_cluster(self, etiquetas, titulo="Radar por Cluster"):
-        import numpy as np
-        import matplotlib.pyplot as plt
-
-        df = self.df_numerico.copy()
-        df["cluster"] = etiquetas
-        promedios = df.groupby("cluster").mean()
-
-        categorias = list(promedios.columns)
-        N = len(categorias)
-        angulos = np.linspace(0, 2 * np.pi, N, endpoint=False).tolist()
-        angulos += angulos[:1]  # cerrar el círculo
-
-        fig, ax = plt.subplots(figsize=(6, 6), subplot_kw=dict(polar=True))
-
-        for cluster, valores in promedios.iterrows():
-            datos = valores.tolist() + [valores[0]]
-            ax.plot(angulos, datos, label=f"Cluster {cluster}")
-            ax.fill(angulos, datos, alpha=0.25)
-
-        # Estética
-        ax.set_theta_offset(np.pi / 2)
-        ax.set_theta_direction(-1)
-        ax.set_thetagrids(np.degrees(angulos[:-1]), categorias)
-        ax.set_yticklabels([])  # ❌ Oculta los números del eje radial
-        ax.set_title(titulo, fontsize=14)
-        ax.legend(loc='upper right', bbox_to_anchor=(1.1, 1.1))
-
-        return fig
 
