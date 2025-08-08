@@ -2,7 +2,6 @@
 Clase: ArbolDecision
 
 Objetivo: Clase enfocada en el procesamiento de datos para Árbol de Decisión
-
 """
 
 import logging
@@ -33,48 +32,53 @@ class ArbolDecision:
         self.datos_preparados = False
 
     def var_continua(self, serie):
-        """Determina si una variable es continua"""
-        if serie.dtype in ['object', 'category']:
-            return False
-        ratio_unicos = serie.nunique() / len(serie)
-        return serie.nunique() > 20 and ratio_unicos > 0.05
+        """
+        Determina si una variable es continua:
+        - Es de tipo numérico (int o float)
+        - Tiene más de 15 valores únicos
+        """
+        return pd.api.types.is_numeric_dtype(serie) and serie.nunique() > 15 #si hay más de 15 val unicos en el target manda el error
 
     def hacer_binning(self, serie, nombre_col):
-        """Convierte variable continua en categórica con bins"""
+        """Convierte variable continua en categórica con bins""" #además, se deja para evitar overfitting
         try:
-            bins = pd.qcut(serie, q=self.n_bins, duplicates='drop')
+            bins = pd.qcut(serie, q=self.n_bins, duplicates='drop') # el duplicates drop evita errores si hay datos repetidos que impiden hacer cortes exactos
             labels = [f"{nombre_col}_bin_{i + 1}" for i in range(len(bins.cat.categories))]
             return pd.qcut(serie, q=self.n_bins, duplicates='drop', labels=labels[:len(bins.cat.categories)])
+            """Crea etiquetas como edad_bin_1, edad_bin_2… para cada rango y devuelve una serie categórica, donde cada valor es un bin que se asignó"""
         except:
             try:
-                bins = pd.cut(serie, bins=self.n_bins, duplicates='drop')
+                bins = pd.cut(serie, bins=self.n_bins, duplicates='drop') #si los valores van de 0 a 100 y n_bins = 4, entonces hace cortes en 0–25, 25–50, etc
                 labels = [f"{nombre_col}_bin_{i + 1}" for i in range(len(bins.cat.categories))]
                 return pd.cut(serie, bins=self.n_bins, labels=labels[:len(bins.cat.categories)], duplicates='drop')
             except:
-                logger.warning(f"No se pudo aplicar binning a {nombre_col}")
+                logger.warning(f"No se pudo aplicar binning a {nombre_col}") #Devuelve la serie sin cambios, para no romper el flujo.
                 return serie
 
     def limpiar_preparar_datos(self):
-        """Limpia y prepara los datos para el modelo, similar a limpiar_escalar_datos del PCA"""
-        # Usar el df que se pasó al constructor (ya filtrado por la página)
+        """Limpia y prepara los datos para el modelo"""
         df_limpio = self.df.copy()
-
-        # Solo validaciones básicas como tu código original
         df_limpio = df_limpio.dropna()
 
         if self.target_col not in df_limpio.columns:
             raise ValueError(f"La columna objetivo '{self.target_col}' no está en el dataset.")
 
+        # 🚨 Validar que la variable objetivo no sea continua
+        if self.var_continua(df_limpio[self.target_col]):
+            raise ValueError(f"La variable objetivo '{self.target_col}' es continua y no puede usarse "
+                             f"en un clasificador de árbol de decisión. Usá una variable categórica.")
+
+        # Separar X e y
         X = df_limpio.drop(columns=[self.target_col])
         y = df_limpio[self.target_col].astype('category')
 
-        # Binning si es necesario (tu código original)
+        # Binning si es necesario
         if self.aplicar_binning:
             for col in X.columns:
                 if self.var_continua(X[col]):
                     X[col] = self.hacer_binning(X[col], col)
 
-        # Agrupar categorías poco frecuentes (tu código original)
+        # Agrupar categorías poco frecuentes
         columnas_categoricas = X.select_dtypes(include=["object", "category"]).columns
         for col in columnas_categoricas:
             if X[col].nunique() > 10:
@@ -104,10 +108,7 @@ class ArbolDecision:
             self.modelo.fit(self.X_train, self.y_train)
             logger.info("Modelo entrenado exitosamente")
         except ValueError as e:
-            if "Unknown label type: continuous" in str(e):
-                raise ValueError("La variable objetivo tiene valores continuos. Use valores categóricos.")
-            else:
-                raise ValueError(f"Error al entrenar el modelo: {e}")
+            raise ValueError(f"Error al entrenar el modelo: {e}")
 
     def evaluar_modelo(self):
         """Evalúa el modelo"""
@@ -160,7 +161,7 @@ class ArbolDecision:
 
         fig, ax = plt.subplots(figsize=(10, 8))
         sns.heatmap(conf_df, annot=True, fmt='d', cmap="Blues", ax=ax,
-                   square=True, linewidths=0.5, cbar_kws={"shrink": .8})
+                    square=True, linewidths=0.5, cbar_kws={"shrink": .8})
         plt.title("Matriz de Confusión", fontsize=16, fontweight='bold')
         plt.ylabel('Valores Reales', fontsize=12)
         plt.xlabel('Valores Predichos', fontsize=12)
@@ -177,7 +178,7 @@ class ArbolDecision:
 
         fig, ax = plt.subplots(figsize=(12, 8))
         bars = ax.barh(range(len(top_importancias)), top_importancias.values,
-                      color='steelblue', alpha=0.8)
+                       color='steelblue', alpha=0.8)
         ax.set_yticks(range(len(top_importancias)))
         ax.set_yticklabels(top_importancias.index)
         ax.set_xlabel('Importancia', fontsize=12)
@@ -187,7 +188,7 @@ class ArbolDecision:
         for i, bar in enumerate(bars):
             width = bar.get_width()
             ax.text(width + width * 0.01, bar.get_y() + bar.get_height() / 2.,
-                   f'{width:.3f}', ha='left', va='center', fontweight='bold')
+                    f'{width:.3f}', ha='left', va='center', fontweight='bold')
 
         plt.tight_layout()
         return fig
