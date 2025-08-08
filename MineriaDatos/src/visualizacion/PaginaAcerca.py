@@ -34,7 +34,7 @@ class PaginaAcerca:
                    - Fiorella Abarca Valverde
                    - Gilary Granados Calvo
                    - Fernando Contreras Artavia
-                   - Jhoel Barquero Carvajal
+                   - Johel Barquero Carvajal
                    """)
 
         with col2:
