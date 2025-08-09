@@ -22,7 +22,20 @@ class PaginaCluster:
 
     def render(self):
         st.set_page_config(page_title="Análisis de Clustering Jerárquico", layout="wide")
-        st.title("🔗 Análisis de Clustering Jerárquico")
+        # Título principal de la página
+        st.markdown("""
+                       <h1 style='
+                           text-align: center;
+                           background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+                           -webkit-background-clip: text;
+                           -webkit-text-fill-color: transparent;
+                           font-size: 3rem;
+                           margin-bottom: 2rem;
+                           font-weight: bold;
+                       '>
+                           Análisis de Clustering Jerárquico
+                       </h1>
+                       """, unsafe_allow_html=True)
         st.markdown("---")
 
         if self.df is None:
