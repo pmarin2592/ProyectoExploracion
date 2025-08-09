@@ -26,7 +26,19 @@ class PaginaKmeans:
             self.tiene_datos = False
 
     def render(self):
-        st.title("🎯 K-Means")
+        st.markdown("""
+                               <h1 style='
+                                   text-align: center;
+                                   background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+                                   -webkit-background-clip: text;
+                                   -webkit-text-fill-color: transparent;
+                                   font-size: 3rem;
+                                   margin-bottom: 2rem;
+                                   font-weight: bold;
+                               '>
+                                   K-Means
+                               </h1>
+                               """, unsafe_allow_html=True)
 
         if not self.tiene_datos:
             st.warning("❌ No hay dataset cargado. Por favor, carga un dataset primero.")

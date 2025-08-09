@@ -66,7 +66,19 @@ class PaginaRegresion:
 
     def render(self):
         # Título principal de la página
-        st.title("📈 Modelos de Regresión")
+        st.markdown("""
+                                      <h1 style='
+                                          text-align: center;
+                                          background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+                                          -webkit-background-clip: text;
+                                          -webkit-text-fill-color: transparent;
+                                          font-size: 3rem;
+                                          margin-bottom: 2rem;
+                                          font-weight: bold;
+                                      '>
+                                          Modelos de Regresión
+                                      </h1>
+                                      """, unsafe_allow_html=True)
 
         # Intentamos obtener el dataset desde la sesión
         df = self._obtener_df()
