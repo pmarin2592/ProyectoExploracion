@@ -15,7 +15,6 @@ import streamlit as st
 from PIL import Image
 
 from src.visualizacion.PaginaACP import PaginaACP
-from src.visualizacion.PaginaAFC import PaginaAFC
 from src.visualizacion.PaginaAcerca import PaginaAcerca
 from src.visualizacion.PaginaCluster import PaginaCluster
 from src.visualizacion.PaginaDatos import PaginaDatos
@@ -30,8 +29,7 @@ class MenuPrincipal:
         self.__menu ={
                     "Datos":PaginaDatos(),                               # Representa archivos/datasets
                     "Estadísticas Básicas": PaginaEstadisticas(),        # Para resúmenes y gráficos básicos
-                    "ACP (Componentes Principales)": PaginaACP(),        # Matemática / reducción dimensional
-                    "AFC (Correspondencias)": PaginaAFC(),               # Relacionado con datos categóricos
+                    "ACP (Componentes Principales)": PaginaACP(),        # Matemática / reducción dimensional             # Relacionado con datos categóricos
                     "Clúster Jerárquico": PaginaCluster(),               # Jerarquía y análisis agrupado
                     "K-Means": PaginaKmeans(),                           # Algoritmo de clustering
                     "Árbol de decisión": PaginaArbolDecision(),             # Árbol decisión
@@ -115,7 +113,6 @@ class MenuPrincipal:
             "Datos": "Gestión de datasets",
             "Estadísticas Básicas": "Análisis exploratorio",
             "ACP (Componentes Principales)": "Reducción dimensional",
-            "AFC (Correspondencias)": "Análisis categórico",
             "Clúster Jerárquico": "Agrupamiento jerárquico",
             "K-Means": "Clustering K-Means",
             "Árbol de decisión": "Árbol de decisión",  # Árbol decisión
@@ -126,7 +123,6 @@ class MenuPrincipal:
         paginas_bloqueables = [
             "Estadísticas Básicas",
             "ACP (Componentes Principales)",
-            "AFC (Correspondencias)",
             "Clúster Jerárquico",
             "K-Means",
             "Árbol de decisión",

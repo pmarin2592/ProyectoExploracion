@@ -14,7 +14,19 @@ class PaginaAcerca:
     def __init__(self):
         pass
     def render(self):
-        st.title("ℹ️ Acerca de esta aplicación")
+        st.markdown("""
+                                              <h1 style='
+                                                  text-align: center;
+                                                  background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+                                                  -webkit-background-clip: text;
+                                                  -webkit-text-fill-color: transparent;
+                                                  font-size: 3rem;
+                                                  margin-bottom: 2rem;
+                                                  font-weight: bold;
+                                              '>
+                                                  Acerca de esta aplicación
+                                              </h1>
+                                              """, unsafe_allow_html=True)
 
         st.markdown("""
          Esta aplicación es una demostración del trabajo realizado por estudiantes del curso **BD-152 Mineria de datos I** del  

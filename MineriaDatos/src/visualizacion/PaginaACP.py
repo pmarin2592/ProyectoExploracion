@@ -21,7 +21,20 @@ class PaginaACP:
             except Exception as e:
                 var = None
     def render(self):
-        st.title("📐 ACP (Componentes Principales)")
+        # Título principal de la página
+        st.markdown("""
+                <h1 style='
+                    text-align: center;
+                    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+                    -webkit-background-clip: text;
+                    -webkit-text-fill-color: transparent;
+                    font-size: 3rem;
+                    margin-bottom: 2rem;
+                    font-weight: bold;
+                '>
+                    ACP (Componentes Principales)
+                </h1>
+                """, unsafe_allow_html=True)
 
         tab1, tab2, tab3, tab4, tab5, tab6, tab7, tab8, tab9, tab10 = st.tabs(
             ["Varianza", "Biplot", "Gráficos 3d","Gráficos 3d con planos","Proyección 2 componentes","Proyección 3 componentes",
