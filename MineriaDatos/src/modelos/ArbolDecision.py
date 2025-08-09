@@ -15,6 +15,7 @@ import seaborn as sns
 
 from src.datos.EstadisticasBasicasDatos import EstadisticasBasicasDatos
 
+
 # Configurar logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -43,13 +44,13 @@ class ArbolDecision:
         """Convierte variable continua en categórica con bins""" #además, se deja para evitar overfitting
         try:
             bins = pd.qcut(serie, q=self.n_bins, duplicates='drop') # el duplicates drop evita errores si hay datos repetidos que impiden hacer cortes exactos
-            labels = [f"{nombre_col}_bin_{i + 1}" for i in range(len(bins.cat.categories))]
+            labels = [f"{nombre_col}Bin{i + 1}" for i in range(len(bins.cat.categories))]
             return pd.qcut(serie, q=self.n_bins, duplicates='drop', labels=labels[:len(bins.cat.categories)])
             """Crea etiquetas como edad_bin_1, edad_bin_2… para cada rango y devuelve una serie categórica, donde cada valor es un bin que se asignó"""
         except:
             try:
                 bins = pd.cut(serie, bins=self.n_bins, duplicates='drop') #si los valores van de 0 a 100 y n_bins = 4, entonces hace cortes en 0–25, 25–50, etc
-                labels = [f"{nombre_col}_bin_{i + 1}" for i in range(len(bins.cat.categories))]
+                labels = [f"{nombre_col}Bin{i + 1}" for i in range(len(bins.cat.categories))]
                 return pd.cut(serie, bins=self.n_bins, labels=labels[:len(bins.cat.categories)], duplicates='drop')
             except:
                 logger.warning(f"No se pudo aplicar binning a {nombre_col}") #Devuelve la serie sin cambios, para no romper el flujo.
@@ -57,16 +58,23 @@ class ArbolDecision:
 
     def limpiar_preparar_datos(self):
         """Limpia y prepara los datos para el modelo"""
-        df_limpio = self.df.copy()
-        df_limpio = df_limpio.dropna()
-
-        if self.target_col not in df_limpio.columns:
+        # Validar que la columna objetivo exista
+        if self.target_col not in self.df.columns:
             raise ValueError(f"La columna objetivo '{self.target_col}' no está en el dataset.")
 
-        # 🚨 Validar que la variable objetivo no sea continua
-        if self.var_continua(df_limpio[self.target_col]):
-            raise ValueError(f"La variable objetivo '{self.target_col}' es continua y no puede usarse "
-                             f"en un clasificador de árbol de decisión. Usá una variable categórica.")
+        # Binning en la variable target si se desea forzarla como categórica
+        if self.aplicar_binning and self.var_continua(self.df[self.target_col]):
+            logger.info(f"Aplicando binning a la variable objetivo '{self.target_col}'")
+            self.df[self.target_col] = self.hacer_binning(self.df[self.target_col], self.target_col)
+        else:
+            # Validar que la variable objetivo NO sea continua
+            if self.var_continua(self.df[self.target_col]):
+                raise ValueError(f"La variable objetivo '{self.target_col}' es continua y no puede usarse "
+                                f"en un clasificador de árbol de decisión. Usá una variable categórica.")
+
+        # Recién acá trabajás sobre una copia limpia
+        df_limpio = self.df.copy()
+        df_limpio = df_limpio.dropna()
 
         # Separar X e y
         X = df_limpio.drop(columns=[self.target_col])
@@ -159,7 +167,7 @@ class ArbolDecision:
         clases_presentes = np.unique(np.concatenate([self.y_test, y_pred]))
         conf_df = pd.DataFrame(conf, index=clases_presentes, columns=clases_presentes)
 
-        fig, ax = plt.subplots(figsize=(10, 8))
+        fig, ax = plt.subplots(figsize=(4, 3))
         sns.heatmap(conf_df, annot=True, fmt='d', cmap="Blues", ax=ax,
                     square=True, linewidths=0.5, cbar_kws={"shrink": .8})
         plt.title("Matriz de Confusión", fontsize=16, fontweight='bold')
