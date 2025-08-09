@@ -13,12 +13,14 @@ Cambios:
     3. Cambios de mejoras sugeridas, cambio en String, tooltip con info de la columna aquesada 07-07-2025
     4. Solucionado problema de actualización cuando cambia el delimitador - 07-07-2025
     5. Cambios separador decimal aquesada 02-08-25
+    6. Solucionado problema de actualización de dataset al cambiar archivo - 09-08-2025
 
 
 """
 import streamlit as st
 import pandas as pd
 import time
+import hashlib
 from src.helpers.UtilDataFrame import UtilDataFrame
 from src.eda.EstadisticasBasicasEda import EstadisticasBasicasEda
 
@@ -27,6 +29,10 @@ class PaginaDatos:
     def __init__(self):
         self.archivo_cargado = None
         self.analisis_realizado = False
+
+    def _generar_hash_archivo(self, archivo_bytes):
+        """Genera un hash MD5 del contenido del archivo para detectar cambios"""
+        return hashlib.md5(archivo_bytes).hexdigest()
 
     def _obtener_tipo_dato_legible(self, tipo_pandas):
         #Convierte el tipo de dato de pandas a una descripción más legible
@@ -98,36 +104,44 @@ class PaginaDatos:
                     key="uploader"
                 )
 
-            # Guardar archivo en session_state si se subió uno nuevo
-            if archivo is not None:
-                nombre = archivo.name
-                prev_name = st.session_state.get('file_name')
-
-                # Si es un archivo nuevo, guardarlo en session_state
-                if prev_name != nombre:
-                    st.session_state.archivo_bytes = archivo.read()
-                    st.session_state.file_name = nombre
-                    archivo.seek(0)  # Resetear el puntero para la primera lectura
-
-            # Verificar si necesitamos recargar los datos por cambios en parámetros
+            # Variables de estado previo
             prev_delimitador = st.session_state.get('delimitador')
             prev_decimal = st.session_state.get('decimal')
+            prev_hash = st.session_state.get('file_hash')
 
-            # Si hay un archivo cargado (nuevo o existente) y hay cambios en parámetros
+            archivo_nuevo = False
+            parametros_cambiados = False
+
+            # Procesar archivo si se subió uno
+            if archivo is not None:
+                archivo_bytes = archivo.read()
+                archivo.seek(0)  # Resetear el puntero
+
+                archivo_hash = self._generar_hash_archivo(archivo_bytes)
+                nombre = archivo.name
+
+                # Verificar si es un archivo nuevo (por hash, no solo por nombre)
+                if prev_hash != archivo_hash:
+                    archivo_nuevo = True
+                    st.session_state.archivo_bytes = archivo_bytes
+                    st.session_state.file_name = nombre
+                    st.session_state.file_hash = archivo_hash
+
+            # Verificar si cambiaron los parámetros de lectura
+            if prev_delimitador != delimitador or prev_decimal != decimal:
+                parametros_cambiados = True
+
+            # Cargar/recargar datos si hay un archivo y (es nuevo o cambiaron parámetros)
             if ('file_name' in st.session_state and
-                    (prev_delimitador != delimitador or prev_decimal != decimal or
-                     'df_cargado' not in st.session_state)):
+                (archivo_nuevo or parametros_cambiados or 'df_cargado' not in st.session_state)):
 
                 try:
                     nombre = st.session_state.file_name
+                    archivo_bytes = st.session_state.archivo_bytes
 
-                    # Si tenemos el archivo actual, usarlo, sino usar los bytes guardados
-                    if archivo is not None and archivo.name == nombre:
-                        archivo_a_leer = archivo
-                    else:
-                        # Recrear el archivo desde los bytes guardados
-                        import io
-                        archivo_a_leer = io.BytesIO(st.session_state.archivo_bytes)
+                    # Recrear el archivo desde los bytes guardados
+                    import io
+                    archivo_a_leer = io.BytesIO(archivo_bytes)
 
                     # Leer según extensión con parámetros actuales
                     if nombre.lower().endswith('.csv'):
@@ -139,27 +153,29 @@ class PaginaDatos:
                     st.session_state.df_cargado = df
                     st.session_state.delimitador = delimitador
                     st.session_state.decimal = decimal
-                    st.session_state.analisis_generado = False
 
-                    # Limpiar análisis previo
+                    # Limpiar análisis previo cuando hay cambios
+                    st.session_state.analisis_generado = False
                     if 'eda' in st.session_state:
                         del st.session_state.eda
 
-                    # Mostrar mensaje solo si hubo cambios en parámetros
-                    if prev_delimitador != delimitador or prev_decimal != decimal:
-                        st.success(f"✅ Datos actualizados con nuevos delimitadores.")
-                    else:
-                        st.success(f"✅ Archivo '{nombre}' cargado exitosamente.")
+                    # Mostrar mensaje apropiado
+                    if archivo_nuevo:
+                        st.success(f"✅ Nuevo archivo '{nombre}' cargado exitosamente.")
+                    elif parametros_cambiados:
+                        st.success(f"✅ Datos actualizados con nuevos parámetros de lectura.")
 
                 except Exception as e:
                     st.error(f"Error al procesar el archivo: {e}")
+                    # Limpiar session_state en caso de error
+                    for key in ['df_cargado', 'eda', 'analisis_generado']:
+                        if key in st.session_state:
+                            del st.session_state[key]
 
-            # Siempre asignar el df a self para mostrar
+            # Asignar el df a self para mostrar (si existe)
             if 'df_cargado' in st.session_state:
-                self.archivo_cargado = st.session_state.get('df_cargado')
+                self.archivo_cargado = st.session_state.df_cargado
 
-            # Mostrar la tabla si existe df cargado
-            if 'df_cargado' in st.session_state:
                 st.subheader("Vista previa del dataset")
 
                 # Mostrar estadísticas básicas
