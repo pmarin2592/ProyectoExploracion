@@ -1,0 +1,113 @@
+""""
+Clase: ClusteriJerarquico
+
+Objetivo:Generar el cluster jerarquico
+
+Cambios: 1. Creacion -fabarca 30-7-2025
+2. Graficos interacivos -Fabarca 10/8/2025
+"""
+import numpy as np
+import pandas as pd
+from scipy.cluster.hierarchy import linkage, dendrogram
+from scipy.spatial.distance import pdist
+import plotly.graph_objects as go
+from typing import List, Tuple
+
+
+class ClusterJerarquico:
+    def __init__(self, pca_datos):
+        if pca_datos.pca_datos.datos_escalados is None:
+            raise ValueError("Los datos de PCA no han sido escalados. Ejecute limpiar_escalar_datos() primero.")
+
+        self.datos_escalados_cluster = pca_datos.pca_datos.datos_escalados
+        self.resultados_jerarquicos = {}
+        self.k_optimo = None
+        self.etiquetas_finales = None
+        self.historial_metricas = {}
+
+def dendrograms_interactive(self, methods: List[str] = None, figsize: Tuple = (1200, 800), show_cuts: bool = True):
+    """
+    Crea dendrogramas interactivos para los métodos seleccionados usando Plotly.
+
+    Args:
+        methods: Lista de métodos de linkage a usar
+        figsize: Tamaño de la figura en píxeles (ancho, alto)
+        show_cuts: Si mostrar las líneas de corte para 2 y 3 clusters
+
+    Returns:
+        Figura de Plotly
+    """
+
+    if methods is None:
+        methods = ['ward', 'complete', 'average', 'single']
+
+    fig = make_subplots(
+        rows=(len(methods) + 1) // 2,
+        cols=2,
+        subplot_titles=[f"Método: {m.capitalize()}" for m in methods]
+    )
+
+    for idx, method in enumerate(methods):
+        # Calcular linkage
+        if method == 'ward':
+            linkage_matrix = linkage(self.cluster_data_scaled, method='ward')
+        else:
+            distances = pdist(self.cluster_data_scaled, metric='euclidean')
+            linkage_matrix = linkage(distances, method=method)
+
+        self.hierarchical_results[method] = linkage_matrix
+
+        # Crear datos del dendrograma
+        dendro = dendrogram(linkage_matrix, no_plot=True, truncate_mode='lastp', p=30)
+
+        x = np.array(dendro['icoord']).flatten()
+        y = np.array(dendro['dcoord']).flatten()
+
+        # Líneas del dendrograma
+        for xs, ys in zip(dendro['icoord'], dendro['dcoord']):
+            fig.add_trace(
+                go.Scatter(
+                    x=xs,
+                    y=ys,
+                    mode='lines',
+                    line=dict(color='blue', width=1),
+                    hoverinfo='none',
+                    showlegend=False
+                ),
+                row=(idx // 2) + 1,
+                col=(idx % 2) + 1
+            )
+
+        # Líneas de corte
+        if show_cuts:
+            n_samples = linkage_matrix.shape[0] + 1
+            cut_2_clusters = linkage_matrix[n_samples - 3, 2]
+            cut_3_clusters = linkage_matrix[n_samples - 4, 2]
+
+            fig.add_hline(
+                y=cut_2_clusters,
+                line_dash="dash",
+                line_color="red",
+                annotation_text="Corte para 2 clusters",
+                row=(idx // 2) + 1,
+                col=(idx % 2) + 1
+            )
+
+            fig.add_hline(
+                y=cut_3_clusters,
+                line_dash="dash",
+                line_color="orange",
+                annotation_text="Corte para 3 clusters",
+                row=(idx // 2) + 1,
+                col=(idx % 2) + 1
+            )
+
+    fig.update_layout(
+        width=figsize[0],
+        height=figsize[1],
+        showlegend=False,
+        title_text="Dendrogramas Interactivos",
+        hovermode="closest"
+    )
+
+    return fig

@@ -10,9 +10,12 @@ Cambios:
 import streamlit as st
 from src.modelos.ClusterJerarquico import ClusterJerarquico
 
+
 class PaginaCluster:
     def __init__(self):
         self.df = None
+        self.pca = None
+
         if 'pca' in st.session_state and st.session_state['pca'] is not None:
             try:
                 self.pca = getattr(st.session_state, 'pca', None)
@@ -26,27 +29,32 @@ class PaginaCluster:
         st.markdown("---")
 
         if self.df is None:
-            st.warning("No hay datos para analizar.")
+            st.warning("⚠️ No hay datos para analizar.")
             return
 
-
         try:
-            analyzer = ClusterJerarquico(self.pca)
-            n_samples, n_features = analyzer.cluster_data_scaled.shape
-            st.write(f"📊 Datos escalados: {n_samples} muestras, {n_features} características")
+            analizador = ClusterJerarquico(self.pca)
+            n_muestras, n_caracteristicas = analizador.datos_escalados_cluster.shape
+            st.write(f"📊 Datos escalados: **{n_muestras} muestras**, **{n_caracteristicas} características**")
             st.markdown("---")
 
-            st.subheader("🌳 Dendrogramas")
-            selected_methods = st.multiselect(
+            st.subheader("🌳 Dendrogramas Interactivos")
+            metodos_seleccionados = st.multiselect(
                 "Seleccionar métodos de linkage:",
                 ['ward', 'complete', 'average', 'single'],
                 default=['ward', 'complete']
             )
 
-            if selected_methods and st.button("Generar Dendrogramas"):
-                with st.spinner("Generando dendrogramas..."):
-                    fig = analyzer.plot_dendrograms(methods=selected_methods)
-                    st.pyplot(fig)
+            # Por defecto siempre mostrar líneas de corte, sin checkbox para ocultar
+            mostrar_cortes = True
+
+            if metodos_seleccionados and st.button("Generar Dendrogramas"):
+                with st.spinner("Generando dendrogramas interactivos..."):
+                    fig = analizador.dendrogramas_interactivos(
+                        metodos=metodos_seleccionados,
+                        mostrar_cortes=mostrar_cortes
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
 
         except Exception as e:
             st.error(f"Error en el análisis de clustering: {e}")

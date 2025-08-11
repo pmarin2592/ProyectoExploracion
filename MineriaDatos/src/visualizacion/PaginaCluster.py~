@@ -29,24 +29,29 @@ class PaginaCluster:
             st.warning("No hay datos para analizar.")
             return
 
-
         try:
-            analyzer = ClusterJerarquico(self.df)
-            n_samples, n_features = analyzer.cluster_data_scaled.shape
-            st.write(f"📊 Datos escalados: {n_samples} muestras, {n_features} características")
+            analizador = ClusterJerarquico(self.pca)
+            n_muestras, n_caracteristicas = analizador.datos_escalados_cluster.shape
+            st.write(f"📊 Datos escalados: {n_muestras} muestras, {n_caracteristicas} características")
             st.markdown("---")
 
-            st.subheader("🌳 Dendrogramas")
-            selected_methods = st.multiselect(
+            st.subheader("🌳 Dendrogramas Interactivos")
+            metodos_seleccionados = st.multiselect(
                 "Seleccionar métodos de linkage:",
                 ['ward', 'complete', 'average', 'single'],
                 default=['ward', 'complete']
             )
 
-            if selected_methods and st.button("Generar Dendrogramas"):
-                with st.spinner("Generando dendrogramas..."):
-                    fig = analyzer.plot_dendrograms(methods=selected_methods)
-                    st.pyplot(fig)
+            mostrar_cortes = st.checkbox("Mostrar líneas de corte (2 y 3 clusters)", value=True)
+
+            if metodos_seleccionados and st.button("Generar Dendrogramas"):
+                with st.spinner("Generando dendrogramas interactivos..."):
+                    fig = analizador.dendrogramas_interactivos(
+                        metodos=metodos_seleccionados,
+                        mostrar_cortes=mostrar_cortes
+                    )
+                    st.plotly_chart(fig, use_container_width=True)
 
         except Exception as e:
             st.error(f"Error en el análisis de clustering: {e}")
+
