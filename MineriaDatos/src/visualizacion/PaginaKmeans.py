@@ -10,7 +10,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from modelos.Kmeans import Kmeans, Clustering
 import plotly.graph_objects as go
-
+from sklearn.decomposition import PCA
+import plotly.express as px
 
 class PaginaKmeans:
     def __init__(self):
@@ -81,7 +82,7 @@ class PaginaKmeans:
         modelo_final, etiquetas_kmeans = self.kmeans_obj.entrenar(k_opt)
         self.df['Cluster_KMeans'] = etiquetas_kmeans
 
-        st.dataframe(self.df[['Cluster_KMeans'] + columnas_numericas].head())
+
 
         # ---------- Clustering manual ----------
         st.subheader("Clustering Manual")
