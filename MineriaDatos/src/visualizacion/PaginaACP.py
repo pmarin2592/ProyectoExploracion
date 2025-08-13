@@ -18,7 +18,8 @@ class PaginaACP:
         if getattr(st.session_state, 'eda', None) is not None:
             try:
                 self.pca = PcaEda(getattr(st.session_state, 'eda', None))
-            except Exception as e:
+                st.session_state.pca = self.pca
+            except Exception as  e:
                 var = None
     def render(self):
         # Título principal de la página
