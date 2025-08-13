@@ -1,0 +1,41 @@
+"""
+Clase: PaginaAC
+
+Objetivo: Clase que mantiene la pagina para visualizacion del ACP
+
+Cambios:
+
+    1. Creacion de la clase y cascarazon visual pmarin 24-06-2025
+"""
+import streamlit as st
+from matplotlib import pyplot as plt
+
+from src.eda.PcaEda import PcaEda
+
+
+class PaginaACP:
+    def __init__(self):
+        if getattr(st.session_state, 'eda', None) is not None:
+            try:
+                self.pca = PcaEda(getattr(st.session_state, 'eda', None))
+                #st.session_state.pca = self.pca
+            except Exception as  e:
+                print(e)
+                var = None
+    def render(self):
+        st.title("📐 ACP (Componentes Principales)")
+
+        tab1, tab2, tab3 = st.tabs(
+            ["📊 Varianza", "📈 Biplot", "❌ Graficos 3d"]
+        )
+
+        with tab1:
+
+            st.pyplot(self.pca.graficar_varianza())
+
+        with tab2:
+            st.pyplot(self.pca.biplot())
+
+        with tab3:
+            st.pyplot(self.pca.graficar_3d())
+
