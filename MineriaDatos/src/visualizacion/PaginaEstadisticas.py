@@ -8,6 +8,7 @@ Cambios:
     2. Mejoras visuales y diseño moderno - Versión mejorada
     3. Optimización completa del código - Versión optimizada
     4. Cambios en UI aquesada 02-08-25
+    5. Eliminación del selector de vista y título principal "Análisis Completo"
 """
 import pandas as pd
 import streamlit as st
@@ -357,25 +358,24 @@ class PaginaEstadisticas:
         if not self._inicializar_dependencias():
             return
 
-        # Selector de vista
-        vista_option = st.radio(
-            "Selecciona el tipo de análisis:",
-            [vista.value for vista in TipoVista],
-            horizontal=True
-        )
+        # Título principal de la página
+        st.markdown("""
+        <h1 style='
+            text-align: center;
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            font-size: 3rem;
+            margin-bottom: 2rem;
+            font-weight: bold;
+        '>
+            Análisis Completo
+        </h1>
+        """, unsafe_allow_html=True)
 
-        # Mapeo de vistas a métodos
-        vista_methods = {
-            TipoVista.COMPLETA.value: self._mostrar_analisis_completo
-        }
-
-        # Ejecutar vista seleccionada
-        method = vista_methods.get(vista_option)
-        if method:
-            try:
-                method()
-            except Exception as e:
-                ComponentesUI.mostrar_error(f"Error inesperado: {str(e)}")
-                logger.exception("Error inesperado en render")
-        else:
-            ComponentesUI.mostrar_error("Vista no reconocida", "warning")
+        # Mostrar directamente el análisis completo
+        try:
+            self._mostrar_analisis_completo()
+        except Exception as e:
+            ComponentesUI.mostrar_error(f"Error inesperado: {str(e)}")
+            logger.exception("Error inesperado en render")
