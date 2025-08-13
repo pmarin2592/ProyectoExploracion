@@ -80,9 +80,11 @@ class PaginaKmeans:
         st.info(f"Se ha detectado automáticamente {k_opt} clusters como óptimos para aplicar K-means.")
 
         modelo_final, etiquetas_kmeans = self.kmeans_obj.entrenar(k_opt)
-        self.df['Cluster_KMeans'] = etiquetas_kmeans
 
-
+        # Crear Serie con NaN para mantener tamaño original
+        etiquetas_completas_kmeans = pd.Series(index=self.df.index, dtype="float64")
+        etiquetas_completas_kmeans[self.cluster_manual.df_numerico.index] = etiquetas_kmeans
+        self.df['Cluster_KMeans'] = etiquetas_completas_kmeans
 
         # ---------- Clustering manual ----------
         st.subheader("Clustering Manual")
@@ -90,7 +92,9 @@ class PaginaKmeans:
         k_cluster = st.slider("Elige número de clusters para el análisis manual", 2, 10, 3, key="slider_clustering")
         resultados = self.cluster_manual.clustering_kmeans(k=k_cluster)
 
-        self.df['Cluster_Manual'] = resultados['etiquetas']
+        etiquetas_completas_manual = pd.Series(index=self.df.index, dtype="float64")
+        etiquetas_completas_manual[self.cluster_manual.df_numerico.index] = resultados['etiquetas']
+        self.df['Cluster_Manual'] = etiquetas_completas_manual
 
         fig_clusters = self.cluster_manual.graficar_clusters_kmeans(resultados['etiquetas'])
 
@@ -98,4 +102,3 @@ class PaginaKmeans:
         st.plotly_chart(fig_clusters, use_container_width=True)
 
         st.dataframe(self.df[['Cluster_Manual'] + columnas_numericas].head())
-
