@@ -102,3 +102,4 @@ class PaginaKmeans:
         st.plotly_chart(fig_clusters, use_container_width=True)
 
         st.dataframe(self.df[['Cluster_Manual'] + columnas_numericas].head())
+
