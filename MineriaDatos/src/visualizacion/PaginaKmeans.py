@@ -1,9 +1,3 @@
-'''
-Clase: PaginaKmeans
-
-Objetivo: Clase que mantiene la página para visualización del análisis de clustering K-means
-'''
-
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -21,29 +15,32 @@ class PaginaKmeans:
 
         # Verificar si el dataset está cargado localmente
         if hasattr(st.session_state, 'df_cargado') and st.session_state.df_cargado is not None:
-            self.df = st.session_state.df_cargado
+            self.df = st.session_state.df_cargado.copy()  # 🔹 usar copia para no modificar el original
             self.tiene_datos = True
         else:
             self.tiene_datos = False
 
     def render(self):
         st.markdown("""
-                               <h1 style='
-                                   text-align: center;
-                                   background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
-                                   -webkit-background-clip: text;
-                                   -webkit-text-fill-color: transparent;
-                                   font-size: 3rem;
-                                   margin-bottom: 2rem;
-                                   font-weight: bold;
-                               '>
-                                   K-Means
-                               </h1>
-                               """, unsafe_allow_html=True)
+            <h1 style='
+                text-align: center;
+                background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+                -webkit-background-clip: text;
+                -webkit-text-fill-color: transparent;
+                font-size: 3rem;
+                margin-bottom: 2rem;
+                font-weight: bold;
+            '>
+                K-Means
+            </h1>
+        """, unsafe_allow_html=True)
 
         if not self.tiene_datos:
             st.warning("❌ No hay dataset cargado. Por favor, carga un dataset primero.")
             return
+
+        # 🔹 Eliminar columnas duplicadas al inicio
+        self.df = self.df.loc[:, ~self.df.columns.duplicated()]
 
         # Columnas numéricas para clustering
         columnas_numericas = self.df.select_dtypes(include=['int64', 'float64']).columns.tolist()
@@ -70,20 +67,20 @@ class PaginaKmeans:
         # 🔄 Mostrar gráfico de codo interactivo
         st.plotly_chart(fig_codo, use_container_width=True)
 
-        # Estimar K óptimo automáticamente con heurística simple (codo)
+        # Estimar K óptimo automáticamente
         deltas = [inercias[i] - inercias[i + 1] for i in range(len(inercias) - 1)]
-        if deltas:
-            k_opt = deltas.index(max(deltas)) + 2  # +2 porque el K inicial suele ser 2
-        else:
-            k_opt = 3  # fallback por si no se puede calcular
+        k_opt = deltas.index(max(deltas)) + 2 if deltas else 3
 
         st.info(f"Se ha detectado automáticamente {k_opt} clusters como óptimos para aplicar K-means.")
 
         modelo_final, etiquetas_kmeans = self.kmeans_obj.entrenar(k_opt)
 
-        # Crear Serie con NaN para mantener tamaño original
         etiquetas_completas_kmeans = pd.Series(index=self.df.index, dtype="float64")
         etiquetas_completas_kmeans[self.cluster_manual.df_numerico.index] = etiquetas_kmeans
+
+        # 🔹 Eliminar columna si ya existe antes de añadirla
+        if 'Cluster_KMeans' in self.df.columns:
+            self.df.drop(columns=['Cluster_KMeans'], inplace=True)
         self.df['Cluster_KMeans'] = etiquetas_completas_kmeans
 
         # ---------- Clustering manual ----------
@@ -94,6 +91,10 @@ class PaginaKmeans:
 
         etiquetas_completas_manual = pd.Series(index=self.df.index, dtype="float64")
         etiquetas_completas_manual[self.cluster_manual.df_numerico.index] = resultados['etiquetas']
+
+        # 🔹 Eliminar columna si ya existe antes de añadirla
+        if 'Cluster_Manual' in self.df.columns:
+            self.df.drop(columns=['Cluster_Manual'], inplace=True)
         self.df['Cluster_Manual'] = etiquetas_completas_manual
 
         fig_clusters = self.cluster_manual.graficar_clusters_kmeans(resultados['etiquetas'])
@@ -102,6 +103,3 @@ class PaginaKmeans:
         st.plotly_chart(fig_clusters, use_container_width=True)
 
         st.dataframe(self.df[['Cluster_Manual'] + columnas_numericas].head())
-
-
-
