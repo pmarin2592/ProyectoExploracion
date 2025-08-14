@@ -97,3 +97,4 @@ class PaginaKmeans:
         with tab3:
             st.subheader("🔹 Datos con Clusters")
             st.dataframe(self.df[['Cluster_Manual', 'Cluster_KMeans'] + columnas_numericas].head())
+
