@@ -114,70 +114,98 @@ class PaginaKmeans:
 
         # ---------- TAB 2: Clusters ----------
         with tab2:
-            st.subheader("🔹 Clusters ")
+            st.subheader("🔹 Clusters")
 
+            # Slider para elegir número de clusters
             k_cluster = st.slider("Elige número de clusters para el análisis manual", 2, 10, 3, key="slider_clustering")
-            resultados = self.cluster_manual.clustering_kmeans(k=k_cluster)
 
-            etiquetas_completas_manual = pd.Series(index=self.df.index, dtype="float64")
-            etiquetas_completas_manual[self.cluster_manual.df_numerico.index] = resultados['etiquetas']
+            # Botón para entrenar K-Means manualmente
+            if st.button("Entrenar K-Means Manual"):
+                try:
+                    # Ejecutar clustering
+                    resultados = self.cluster_manual.clustering_kmeans(k=k_cluster)
 
-            if 'Cluster_Manual' in self.df.columns:
-                self.df.drop(columns=['Cluster_Manual'], inplace=True)
-            self.df['Cluster_Manual'] = etiquetas_completas_manual
+                    # Asignar clusters al DataFrame
+                    etiquetas_completas_manual = pd.Series(index=self.df.index, dtype="float64")
+                    etiquetas_completas_manual[self.cluster_manual.df_numerico.index] = resultados['etiquetas']
 
-            # ===== Graficar con Plotly y mostrar conteo por cluster =====
-            df_plot = self.cluster_manual.df_numerico.copy()
-            df_plot['Cluster'] = resultados['etiquetas']
-            columnas_graf = df_plot.columns[:2]  # usar primeras 2 columnas numéricas para el scatter
+                    if 'Cluster_Manual' in self.df.columns:
+                        self.df.drop(columns=['Cluster_Manual'], inplace=True)
+                    self.df['Cluster_Manual'] = etiquetas_completas_manual
 
-            fig_clusters = go.Figure()
-            for cluster in sorted(df_plot['Cluster'].unique()):
-                df_cluster = df_plot[df_plot['Cluster'] == cluster]
-                fig_clusters.add_trace(go.Scatter(
-                    x=df_cluster[columnas_graf[0]],
-                    y=df_cluster[columnas_graf[1]],
-                    mode='markers',
-                    name=f'Cluster {cluster}',
-                    marker=dict(size=8)
-                ))
+                    # <-- Eliminar NaN y convertir a entero
+                    self.df = self.df.dropna(subset=['Cluster_Manual'])
+                    self.df['Cluster_Manual'] = self.df['Cluster_Manual'].astype(int)
 
-            # Anotaciones tipo "legend" en esquina superior izquierda
-            conteos = df_plot['Cluster'].value_counts().to_dict()
-            anotaciones = []
-            offset = 0
-            for cluster, count in sorted(conteos.items()):
-                anotaciones.append(dict(
-                    x=-0.02,  # fuera del área de trazado, esquina izquierda
-                    y=1 - offset,  # descendiendo por cluster
-                    xref='paper',
-                    yref='paper',
-                    text=f"Cluster {cluster}: {count} pts",
-                    showarrow=False,
-                    font=dict(size=12, color='black'),
-                    align='left'
-                ))
-                offset += 0.08  # espacio entre filas
+                    st.success(f"K-Means entrenado con {k_cluster} clusters y asignado al dataset!")
 
-            fig_clusters.update_layout(
-                title="Clustering Manual",
-                xaxis_title=columnas_graf[0],
-                yaxis_title=columnas_graf[1],
-                annotations=anotaciones,
-                template='plotly_white',
-                height=500,
-                margin=dict(l=120)  # espacio a la izquierda para las anotaciones
-            )
+                    # ===== Graficar con Plotly y mostrar conteo por cluster =====
+                    df_plot = self.cluster_manual.df_numerico.loc[self.df.index].copy()  # solo filas válidas
+                    df_plot['Cluster'] = self.df['Cluster_Manual']
+                    columnas_graf = df_plot.columns[:2]  # usar primeras 2 columnas numéricas para el scatter
 
-            st.plotly_chart(fig_clusters, use_container_width=True)
+                    fig_clusters = go.Figure()
+                    for cluster in sorted(df_plot['Cluster'].unique()):
+                        df_cluster = df_plot[df_plot['Cluster'] == cluster]
+                        fig_clusters.add_trace(go.Scatter(
+                            x=df_cluster[columnas_graf[0]],
+                            y=df_cluster[columnas_graf[1]],
+                            mode='markers',
+                            name=f'Cluster {cluster}',
+                            marker=dict(size=8)
+                        ))
+
+                    # Anotaciones tipo "legend" en esquina superior izquierda
+                    conteos = df_plot['Cluster'].value_counts().to_dict()
+                    anotaciones = []
+                    offset = 0
+                    for cluster, count in sorted(conteos.items()):
+                        anotaciones.append(dict(
+                            x=-0.02,
+                            y=1 - offset,
+                            xref='paper',
+                            yref='paper',
+                            text=f"Cluster {cluster}: {count} pts",
+                            showarrow=False,
+                            font=dict(size=12, color='black'),
+                            align='left'
+                        ))
+                        offset += 0.08
+
+                    fig_clusters.update_layout(
+                        title="Clustering Manual",
+                        xaxis_title=columnas_graf[0],
+                        yaxis_title=columnas_graf[1],
+                        annotations=anotaciones,
+                        template='plotly_white',
+                        height=500,
+                        margin=dict(l=120)
+                    )
+
+                    st.plotly_chart(fig_clusters, use_container_width=True)
+
+                except Exception as e:
+                    st.error(f"Error al entrenar K-Means: {str(e)}")
 
         # ---------- TAB 3: Datos ----------
         with tab3:
             st.subheader("🔹 Datos ")
-            st.dataframe(self.df[['Cluster_Manual'] + columnas_numericas])
 
+            columnas_a_mostrar = columnas_numericas.copy()
+            if 'Cluster_Manual' in self.df.columns:
+                columnas_a_mostrar = ['Cluster_Manual'] + columnas_a_mostrar
+
+            st.dataframe(self.df[columnas_a_mostrar])
         # ---------- TAB 4: Selecciona Cluster ----------
+
         with tab4:
             st.subheader("🔹 Selecciona Cluster")
-            cluster_seleccionado = st.selectbox("Selecciona un cluster", self.df['Cluster_Manual'].unique())
-            st.dataframe(self.df[self.df['Cluster_Manual'] == cluster_seleccionado])
+
+            if 'Cluster_Manual' in self.df.columns:
+                cluster_seleccionado = st.selectbox(
+                    "Selecciona un cluster",
+                    self.df['Cluster_Manual'].unique()
+                )
+                st.dataframe(self.df[self.df['Cluster_Manual'] == cluster_seleccionado])
+            else:
+                st.info("❌ No hay clusters manuales asignados. Ve al TAB 'Clusters' para generar los clusters primero.")
