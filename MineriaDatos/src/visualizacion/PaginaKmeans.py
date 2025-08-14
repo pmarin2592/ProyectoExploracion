@@ -1,11 +1,8 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
-from modelos.Kmeans import Kmeans, Clustering
 import plotly.graph_objects as go
-from sklearn.decomposition import PCA
-import plotly.express as px
+from modelos.Kmeans import Kmeans, Clustering
 
 class PaginaKmeans:
     def __init__(self):
@@ -13,9 +10,9 @@ class PaginaKmeans:
         self.cluster_manual = None
         self.kmeans_obj = None
 
-        # Verificar si el dataset está cargado localmente
+        # Verificar si el dataset está cargado
         if hasattr(st.session_state, 'df_cargado') and st.session_state.df_cargado is not None:
-            self.df = st.session_state.df_cargado.copy()  # 🔹 usar copia para no modificar el original
+            self.df = st.session_state.df_cargado.copy()
             self.tiene_datos = True
         else:
             self.tiene_datos = False
@@ -39,10 +36,11 @@ class PaginaKmeans:
             st.warning("❌ No hay dataset cargado. Por favor, carga un dataset primero.")
             return
 
-        # 🔹 Eliminar columnas duplicadas al inicio
+        # 🔹 Limpiar dataset: eliminar filas y columnas duplicadas
+        self.df = self.df.dropna(how='all')
         self.df = self.df.loc[:, ~self.df.columns.duplicated()]
 
-        # Columnas numéricas para clustering
+        # Columnas numéricas
         columnas_numericas = self.df.select_dtypes(include=['int64', 'float64']).columns.tolist()
         if len(columnas_numericas) < 2:
             st.warning("El dataset debe tener al menos 2 columnas numéricas para clustering.")
@@ -51,55 +49,51 @@ class PaginaKmeans:
         # Instanciar Clustering manual
         self.cluster_manual = Clustering(self.df)
         datos_escalados, columnas_escaladas = self.cluster_manual.limpiar_y_escalar(columnas_numericas)
-
         if datos_escalados is None:
             st.warning("Error al escalar las variables numéricas.")
             return
 
         self.kmeans_obj = Kmeans(datos_escalados)
 
-        # ---------- K-means automático ----------
-        st.subheader("Análisis K-means Automático")
+        # ===== Crear pestañas para cada sección =====
+        tab1, tab2, tab3 = st.tabs(["K-means Automático", "Clustering Manual", "Datos"])
 
-        inercias = self.kmeans_obj.evaluar_varios_k()
-        fig_codo = self.kmeans_obj.graficar_metricas(inercias)
+        # ---------- TAB 1: K-means Automático ----------
+        with tab1:
+            st.subheader("🔹 K-means Automático")
+            inercias = self.kmeans_obj.evaluar_varios_k()
+            fig_codo = self.kmeans_obj.graficar_metricas(inercias)
+            st.plotly_chart(fig_codo, use_container_width=True)
 
-        # 🔄 Mostrar gráfico de codo interactivo
-        st.plotly_chart(fig_codo, use_container_width=True)
+            deltas = [inercias[i] - inercias[i + 1] for i in range(len(inercias) - 1)]
+            k_opt = deltas.index(max(deltas)) + 2 if deltas else 3
+            st.info(f"Se ha detectado automáticamente {k_opt} clusters como óptimos.")
 
-        # Estimar K óptimo automáticamente
-        deltas = [inercias[i] - inercias[i + 1] for i in range(len(inercias) - 1)]
-        k_opt = deltas.index(max(deltas)) + 2 if deltas else 3
+            modelo_final, etiquetas_kmeans = self.kmeans_obj.entrenar(k_opt)
+            etiquetas_completas_kmeans = pd.Series(index=self.df.index, dtype="float64")
+            etiquetas_completas_kmeans[self.cluster_manual.df_numerico.index] = etiquetas_kmeans
 
-        st.info(f"Se ha detectado automáticamente {k_opt} clusters como óptimos para aplicar K-means.")
+            if 'Cluster_KMeans' in self.df.columns:
+                self.df.drop(columns=['Cluster_KMeans'], inplace=True)
+            self.df['Cluster_KMeans'] = etiquetas_completas_kmeans
 
-        modelo_final, etiquetas_kmeans = self.kmeans_obj.entrenar(k_opt)
+        # ---------- TAB 2: Clustering Manual ----------
+        with tab2:
+            st.subheader("🔹 Clustering Manual")
+            k_cluster = st.slider("Elige número de clusters para el análisis manual", 2, 10, 3, key="slider_clustering")
+            resultados = self.cluster_manual.clustering_kmeans(k=k_cluster)
 
-        etiquetas_completas_kmeans = pd.Series(index=self.df.index, dtype="float64")
-        etiquetas_completas_kmeans[self.cluster_manual.df_numerico.index] = etiquetas_kmeans
+            etiquetas_completas_manual = pd.Series(index=self.df.index, dtype="float64")
+            etiquetas_completas_manual[self.cluster_manual.df_numerico.index] = resultados['etiquetas']
 
-        # 🔹 Eliminar columna si ya existe antes de añadirla
-        if 'Cluster_KMeans' in self.df.columns:
-            self.df.drop(columns=['Cluster_KMeans'], inplace=True)
-        self.df['Cluster_KMeans'] = etiquetas_completas_kmeans
+            if 'Cluster_Manual' in self.df.columns:
+                self.df.drop(columns=['Cluster_Manual'], inplace=True)
+            self.df['Cluster_Manual'] = etiquetas_completas_manual
 
-        # ---------- Clustering manual ----------
-        st.subheader("Clustering Manual")
+            fig_clusters = self.cluster_manual.graficar_clusters_kmeans(resultados['etiquetas'])
+            st.plotly_chart(fig_clusters, use_container_width=True)
 
-        k_cluster = st.slider("Elige número de clusters para el análisis manual", 2, 10, 3, key="slider_clustering")
-        resultados = self.cluster_manual.clustering_kmeans(k=k_cluster)
-
-        etiquetas_completas_manual = pd.Series(index=self.df.index, dtype="float64")
-        etiquetas_completas_manual[self.cluster_manual.df_numerico.index] = resultados['etiquetas']
-
-        # 🔹 Eliminar columna si ya existe antes de añadirla
-        if 'Cluster_Manual' in self.df.columns:
-            self.df.drop(columns=['Cluster_Manual'], inplace=True)
-        self.df['Cluster_Manual'] = etiquetas_completas_manual
-
-        fig_clusters = self.cluster_manual.graficar_clusters_kmeans(resultados['etiquetas'])
-
-        # 🔄 Reemplazo de matplotlib por Plotly
-        st.plotly_chart(fig_clusters, use_container_width=True)
-
-        st.dataframe(self.df[['Cluster_Manual'] + columnas_numericas].head())
+        # ---------- TAB 3: Datos ----------
+        with tab3:
+            st.subheader("🔹 Datos con Clusters")
+            st.dataframe(self.df[['Cluster_Manual', 'Cluster_KMeans'] + columnas_numericas].head())
