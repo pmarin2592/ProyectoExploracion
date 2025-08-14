@@ -104,3 +104,4 @@ class PaginaKmeans:
         st.dataframe(self.df[['Cluster_Manual'] + columnas_numericas].head())
 
 
+
