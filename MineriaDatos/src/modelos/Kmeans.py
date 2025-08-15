@@ -150,7 +150,7 @@ class Clustering:
             self.df_numerico.iloc[:, 0],
             self.df_numerico.iloc[:, 1],
             c=etiquetas,
-            cmap='tab10',
+            cmap='tab20c',
             alpha=0.7
         )
         ax.set_title('Clusters')
@@ -159,5 +159,3 @@ class Clustering:
         ax.grid(True, alpha=0.3)
         fig.tight_layout()
         return fig
-
-
