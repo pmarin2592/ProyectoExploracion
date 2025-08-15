@@ -4,114 +4,110 @@ Clase: ClusteriJerarquico
 Objetivo:Generar el cluster jerarquico
 
 Cambios: 1. Creacion -fabarca 30-7-2025
+2. Graficos interacivos -Fabarca 10/8/2025
 """
 import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-from scipy.cluster.hierarchy import linkage, dendrogram, fcluster
-from scipy.spatial.distance import pdist, squareform
-from sklearn.metrics import silhouette_score, calinski_harabasz_score, davies_bouldin_score
-from sklearn.preprocessing import StandardScaler
-from typing import Dict, List, Tuple
-from src.eda.EstadisticasBasicasEda import EstadisticasBasicasEda
+from scipy.cluster.hierarchy import linkage, dendrogram
+from scipy.spatial.distance import pdist
+import plotly.graph_objects as go
+from plotly.subplots import make_subplots
+from typing import List, Tuple
 
 
 class ClusterJerarquico:
-    def __init__(self, eda: EstadisticasBasicasEda):
-            self._eda = eda
-            self.cluster_data = None
-            self.cluster_data_scaled = None
-            self.numeric_cols = None
-            self.scaler = StandardScaler()
-            self.hierarchical_results = {}
-            self.optimal_k = None
-            self.final_labels = None
-            self.metrics_history = {}
+    def __init__(self, pca_datos):
+        if pca_datos.pca_datos.datos_escalados is None:
+            raise ValueError("Los datos de PCA no han sido escalados. Ejecute limpiar_escalar_datos() primero.")
 
+        self.datos_escalados_cluster = pca_datos.pca_datos.datos_escalados
+        self.resultados_jerarquicos = {}
+        self.k_optimo = None
+        self.etiquetas_finales = None
+        self.historial_metricas = {}
 
-    def escalar_datos(self) -> Dict:
+    def dendrogramas_interactivos(
+        self,
+        metodos: List[str] = None,
+        tamaño_figura: Tuple[int, int] = (1200, 800),
+        mostrar_cortes: bool = True
+    ):
         """
-        Escala las columnas numéricas del DataFrame original.
-
-        Returns:
-            Dict con información sobre la preparación de datos
-        """
-        try:
-            # Seleccionar solo columnas numéricas
-            self.numeric_cols = self._eda.select_dtypes(include=['number']).columns.tolist()
-            self.cluster_data = self._eda[self.numeric_cols].dropna()
-
-            # Escalado
-            self.cluster_data_scaled = self.scaler.fit_transform(self.cluster_data)
-
-            info = {
-                'n_samples': self.cluster_data_scaled.shape[0],
-                'n_features': self.cluster_data_scaled.shape[1],
-                'numeric_columns': self.numeric_cols,
-                'data_shape': self.cluster_data_scaled.shape
-            }
-            return info
-        except Exception as e:
-            raise ValueError(f"Error al escalar los datos: {str(e)}")
-
-    def plot_dendrograms(self, methods: List[str] = None, figsize: Tuple = (20, 15)) -> plt.Figure:
-        """
-        Crea dendrogramas para los métodos seleccionados.
+        Crea dendrogramas interactivos para los métodos seleccionados usando Plotly.
 
         Args:
-            methods: Lista de métodos de linkage a usar
-            figsize: Tamaño de la figura
-
+            metodos: Lista de métodos de linkage a usar
+            tamaño_figura: Tamaño de la figura en píxeles (ancho, alto)
+            mostrar_cortes: Si mostrar las líneas de corte para 2 y 3 clusters
         Returns:
-            Figura de matplotlib
+            Figura de Plotly
         """
-        if self.cluster_data_scaled is None:
-            self.prepare_data()
+        if metodos is None:
+            metodos = ['ward', 'complete', 'average', 'single']
 
-        if methods is None:
-            methods = ['ward', 'complete', 'average', 'single']
+        fig = make_subplots(
+            rows=(len(metodos) + 1) // 2,
+            cols=2,
+            subplot_titles=[f"Método: {m.capitalize()}" for m in metodos]
+        )
 
-        # Calcular matrices de linkage para los métodos seleccionados
-        for method in methods:
-            if method == 'ward':
-                linkage_matrix = linkage(self.cluster_data_scaled, method='ward')
+        for idx, metodo in enumerate(metodos):
+            # Calcular linkage
+            if metodo == 'ward':
+                linkage_matrix = linkage(self.datos_escalados_cluster, method='ward')
             else:
-                distances = pdist(self.cluster_data_scaled, metric='euclidean')
-                linkage_matrix = linkage(distances, method=method)
+                distances = pdist(self.datos_escalados_cluster, metric='euclidean')
+                linkage_matrix = linkage(distances, method=metodo)
 
-            self.hierarchical_results[method] = linkage_matrix
+            self.resultados_jerarquicos[metodo] = linkage_matrix
 
-        # Crear subplots dinámicamente según número de métodos
-        # Crear subplots dinámicamente según número de métodos
-        n_methods = len(methods)
-        cols = 2
-        rows = (n_methods + 1) // 2
+            # Crear datos del dendrograma
+            dendro = dendrogram(linkage_matrix, no_plot=True, truncate_mode='lastp', p=30)
 
-        fig, axes = plt.subplots(rows, cols, figsize=figsize)
+            # Dibujar las líneas del dendrograma
+            for xs, ys in zip(dendro['icoord'], dendro['dcoord']):
+                fig.add_trace(
+                    go.Scatter(
+                        x=xs,
+                        y=ys,
+                        mode='lines',
+                        line=dict(color='blue', width=1),
+                        hoverinfo='none',
+                        showlegend=False
+                    ),
+                    row=(idx // 2) + 1,
+                    col=(idx % 2) + 1
+                )
 
-        # Asegurar que `axes` sea iterable
-        if isinstance(axes, np.ndarray):
-            axes = axes.ravel()
-        else:
-            axes = [axes]
+            # Líneas de corte (2 y 3 clusters)
+            if mostrar_cortes:
+                n_samples = linkage_matrix.shape[0] + 1
+                cut_2_clusters = linkage_matrix[n_samples - 3, 2]
+                cut_3_clusters = linkage_matrix[n_samples - 4, 2]
 
-        for idx, method in enumerate(methods):
-            linkage_matrix = self.hierarchical_results[method]
+                fig.add_hline(
+                    y=cut_2_clusters,
+                    line_dash="dash",
+                    line_color="red",
+                    annotation_text="Corte para 2 clusters",
+                    row=(idx // 2) + 1,
+                    col=(idx % 2) + 1
+                )
 
-            dendrogram(linkage_matrix,
-                       ax=axes[idx],
-                       truncate_mode='lastp',
-                       p=30,
-                       leaf_rotation=90,
-                       leaf_font_size=8)
+                fig.add_hline(
+                    y=cut_3_clusters,
+                    line_dash="dash",
+                    line_color="orange",
+                    annotation_text="Corte para 3 clusters",
+                    row=(idx // 2) + 1,
+                    col=(idx % 2) + 1
+                )
 
-            axes[idx].set_title(f'Dendrograma - Método: {method.capitalize()}')
-            axes[idx].set_xlabel('Índice de Muestra o (Tamaño del Cluster)')
-            axes[idx].set_ylabel('Distancia')
+        fig.update_layout(
+            width=tamaño_figura[0],
+            height=tamaño_figura[1],
+            showlegend=False,
+            title_text="Dendrogramas Interactivos",
+            hovermode="closest"
+        )
 
-        # Ocultar axes vacíos si hay menos que el total de subplots
-        for idx in range(n_methods, len(axes)):
-            axes[idx].set_visible(False)
-
-        plt.tight_layout()
         return fig
