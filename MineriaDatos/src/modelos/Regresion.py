@@ -1,3 +1,16 @@
+"""
+Clase: RegresionLineal
+
+Objetivo: Clase enfocada en el procesamiento de datos y generación de modelos de
+Regresión Lineal Simple y Múltiple, incluyendo cálculo de métricas y visualización
+de resultados.
+
+Cambios:
+1. Cambio para que solo acepte variables numéricas en los modelos fcontreras 14-08-2025
+2. Agregación de gráficos lineales simples para las variables en el modelo de regresión lineal multiple fcontreras 14-08-2025
+3. Cambios con los resultados en las tarjetas coloridas fcontreras 14-08-2025
+"""
+
 import pandas as pd  # Para manejo de DataFrames
 import numpy as np  # Para cálculos numéricos y arreglos
 
@@ -140,7 +153,7 @@ class Regresion:
     @staticmethod
     def regresion_lineal_multiple(df: pd.DataFrame, x_vars: list[str], y: str):
         """
-        Realiza regresión lineal múltiple con varias variables predictoras (x_vars).
+        Realiza regresión lineal múltiple con métricas de entrenamiento y prueba.
         """
         # Validamos que la variable objetivo exista
         if y not in df.columns:
@@ -156,14 +169,27 @@ class Regresion:
         X = sub[x_vars]
         Y = sub[y]
 
+        # División en entrenamiento y prueba (80% - 20%)
+        from sklearn.model_selection import train_test_split
+        X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=42)
+
         # Creamos y ajustamos modelo
         model = LinearRegression()
-        model.fit(X, Y)
+        model.fit(X_train, Y_train)
 
-        # Predicciones y métricas
-        y_pred = model.predict(X)
-        r2 = r2_score(Y, y_pred)
-        mse = mean_squared_error(Y, y_pred)
+        # Predicciones entrenamiento y prueba
+        y_train_pred = model.predict(X_train)
+        y_test_pred = model.predict(X_test)
+
+        # Métricas entrenamiento
+        r2_train = r2_score(Y_train, y_train_pred)
+        mse_train = mean_squared_error(Y_train, y_train_pred)
+        rmse_train = np.sqrt(mse_train)
+
+        # Métricas prueba
+        r2_test = r2_score(Y_test, y_test_pred)
+        mse_test = mean_squared_error(Y_test, y_test_pred)
+        rmse_test = np.sqrt(mse_test)
 
         # Obtenemos coeficientes e intercepto
         coeficientes = dict(zip(x_vars, model.coef_.tolist()))
@@ -172,8 +198,12 @@ class Regresion:
         resultados = {
             "coeficientes": coeficientes,
             "intercepto": float(intercept),
-            "R2": float(r2),
-            "MSE": float(mse),
+            "R2_entrenamiento": float(r2_train),
+            "R2_prueba": float(r2_test),
+            "MSE_entrenamiento": float(mse_train),
+            "MSE_prueba": float(mse_test),
+            "RMSE_entrenamiento": float(rmse_train),
+            "RMSE_prueba": float(rmse_test),
         }
 
         # Retornamos modelo y resultados
@@ -181,7 +211,12 @@ class Regresion:
             "modelo": model,
             "X": X,
             "Y": Y,
-            "y_pred": y_pred,
+            "X_train": X_train,
+            "Y_train": Y_train,
+            "X_test": X_test,
+            "Y_test": Y_test,
+            "y_train_pred": y_train_pred,
+            "y_test_pred": y_test_pred,
             "resultados": resultados,
         }
 
