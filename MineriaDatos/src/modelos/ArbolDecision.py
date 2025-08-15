@@ -13,18 +13,13 @@ from sklearn.metrics import accuracy_score, classification_report, confusion_mat
 import matplotlib.pyplot as plt
 import seaborn as sns
 
-from src.datos.EstadisticasBasicasDatos import EstadisticasBasicasDatos
-
-
-# Configurar logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class ArbolDecision:
 
-    def __init__(self, eda: EstadisticasBasicasDatos, df, target_col, aplicar_binning=True, n_bins=5):
-        self._eda = eda
-        self.df = df  # Usar el df que se pasa (ya filtrado)
+    def __init__(self, df, target_col, aplicar_binning=True, n_bins=5):
+        self.df = df
         self.target_col = target_col
         self.aplicar_binning = aplicar_binning
         self.n_bins = n_bins
@@ -33,60 +28,48 @@ class ArbolDecision:
         self.datos_preparados = False
 
     def var_continua(self, serie):
-        """
-        Determina si una variable es continua:
-        - Es de tipo numérico (int o float)
-        - Tiene más de 15 valores únicos
-        """
-        return pd.api.types.is_numeric_dtype(serie) and serie.nunique() > 15 #si hay más de 15 val unicos en el target manda el error
+        """Determina si una variable es continua: numérica con más de 15 valores únicos"""
+        return pd.api.types.is_numeric_dtype(serie) and serie.nunique() > 15
 
     def hacer_binning(self, serie, nombre_col):
-        """Convierte variable continua en categórica con bins""" #además, se deja para evitar overfitting
+        """Convierte variable continua en categórica con bins"""
         try:
-            bins = pd.qcut(serie, q=self.n_bins, duplicates='drop') # el duplicates drop evita errores si hay datos repetidos que impiden hacer cortes exactos
+            bins = pd.qcut(serie, q=self.n_bins, duplicates='drop')
             labels = [f"{nombre_col}Bin{i + 1}" for i in range(len(bins.cat.categories))]
             return pd.qcut(serie, q=self.n_bins, duplicates='drop', labels=labels[:len(bins.cat.categories)])
-            """Crea etiquetas como edad_bin_1, edad_bin_2… para cada rango y devuelve una serie categórica, donde cada valor es un bin que se asignó"""
         except:
             try:
-                bins = pd.cut(serie, bins=self.n_bins, duplicates='drop') #si los valores van de 0 a 100 y n_bins = 4, entonces hace cortes en 0–25, 25–50, etc
+                bins = pd.cut(serie, bins=self.n_bins, duplicates='drop')
                 labels = [f"{nombre_col}Bin{i + 1}" for i in range(len(bins.cat.categories))]
                 return pd.cut(serie, bins=self.n_bins, labels=labels[:len(bins.cat.categories)], duplicates='drop')
             except:
-                logger.warning(f"No se pudo aplicar binning a {nombre_col}") #Devuelve la serie sin cambios, para no romper el flujo.
+                logger.warning(f"No se pudo aplicar binning a {nombre_col}")
                 return serie
 
     def limpiar_preparar_datos(self):
         """Limpia y prepara los datos para el modelo"""
-        # Validar que la columna objetivo exista
         if self.target_col not in self.df.columns:
             raise ValueError(f"La columna objetivo '{self.target_col}' no está en el dataset.")
 
-        # Binning en la variable target si se desea forzarla como categórica
         if self.aplicar_binning and self.var_continua(self.df[self.target_col]):
             logger.info(f"Aplicando binning a la variable objetivo '{self.target_col}'")
             self.df[self.target_col] = self.hacer_binning(self.df[self.target_col], self.target_col)
         else:
-            # Validar que la variable objetivo NO sea continua
             if self.var_continua(self.df[self.target_col]):
                 raise ValueError(f"La variable objetivo '{self.target_col}' es continua y no puede usarse "
                                 f"en un clasificador de árbol de decisión. Usá una variable categórica.")
 
-        # Recién acá trabajás sobre una copia limpia
         df_limpio = self.df.copy()
         df_limpio = df_limpio.dropna()
 
-        # Separar X e y
         X = df_limpio.drop(columns=[self.target_col])
         y = df_limpio[self.target_col].astype('category')
 
-        # Binning si es necesario
         if self.aplicar_binning:
             for col in X.columns:
                 if self.var_continua(X[col]):
                     X[col] = self.hacer_binning(X[col], col)
 
-        # Agrupar categorías poco frecuentes
         columnas_categoricas = X.select_dtypes(include=["object", "category"]).columns
         for col in columnas_categoricas:
             if X[col].nunique() > 10:
@@ -94,10 +77,8 @@ class ArbolDecision:
                 comunes = comunes[comunes >= 0.05].index
                 X[col] = X[col].apply(lambda x: x if x in comunes else "Otro")
 
-        # Codificación
         X = pd.get_dummies(X)
 
-        # Partición
         self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
             X, y, test_size=0.2, random_state=42
         )

@@ -2,15 +2,13 @@
 Clase: ArbolDecisionEda
 
 Objetivo: Clase conectora para el Árbol de Decisión
-
 """
 
 from src.modelos.ArbolDecision import ArbolDecision
 
 class ArbolDecisionEda:
-    def __init__(self, eda, df, target_col, aplicar_binning=True, n_bins=5):
-        self._eda = eda
-        self._arbol_datos = ArbolDecision(self._eda.eda, df, target_col, aplicar_binning, n_bins)
+    def __init__(self, df, target_col, aplicar_binning=True, n_bins=5):
+        self._arbol_datos = ArbolDecision(df, target_col, aplicar_binning, n_bins)
         self._arbol_datos.limpiar_preparar_datos()
         self._arbol_datos.entrenar_modelo()
 
