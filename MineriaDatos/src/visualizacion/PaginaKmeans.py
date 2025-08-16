@@ -184,3 +184,6 @@ class PaginaKmeans:
                 st.dataframe(self.df[self.df['Cluster_Manual'] == cluster_seleccionado])
             else:
                 st.info("❌ No hay clusters manuales asignados. Ve al TAB 'Clusters' para generar los clusters primero.")
+
+
+
