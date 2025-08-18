@@ -188,3 +188,5 @@ class PaginaKmeans:
             except Exception as e:
                 st.warning(f"Error mostrando código: {str(e)}")
 
+
+
