@@ -3,7 +3,7 @@ Clase: ArbolDecision
 
 Objetivo: Clase enfocada en el procesamiento de datos para Árbol de Decisión
 """
-
+import inspect
 import logging
 import pandas as pd
 import numpy as np
@@ -37,13 +37,13 @@ class ArbolDecision:
             bins = pd.qcut(serie, q=self.n_bins, duplicates='drop')
             labels = [f"{nombre_col}Bin{i + 1}" for i in range(len(bins.cat.categories))]
             return pd.qcut(serie, q=self.n_bins, duplicates='drop', labels=labels[:len(bins.cat.categories)])
-        except:
+        except ValueError as e:
             try:
                 bins = pd.cut(serie, bins=self.n_bins, duplicates='drop')
                 labels = [f"{nombre_col}Bin{i + 1}" for i in range(len(bins.cat.categories))]
                 return pd.cut(serie, bins=self.n_bins, labels=labels[:len(bins.cat.categories)], duplicates='drop')
-            except:
-                logger.warning(f"No se pudo aplicar binning a {nombre_col}")
+            except ValueError as e2:
+                logger.warning(f"No se pudo aplicar binning a {nombre_col}: {e2}")
                 return serie
 
     def limpiar_preparar_datos(self):
@@ -56,34 +56,35 @@ class ArbolDecision:
             self.df[self.target_col] = self.hacer_binning(self.df[self.target_col], self.target_col)
         else:
             if self.var_continua(self.df[self.target_col]):
-                raise ValueError(f"La variable objetivo '{self.target_col}' es continua y no puede usarse "
-                                f"en un clasificador de árbol de decisión. Usá una variable categórica.")
+                raise ValueError(f"La variable objetivo '{self.target_col}' es continua o tiene más de 15 valores únicos. No puede usarse "
+                                 f"en un clasificador de árbol de decisión. Usa una variable categórica o con menos valores únicos.")
 
-        df_limpio = self.df.copy()
-        df_limpio = df_limpio.dropna()
+        try:
+            df_limpio = self.df.dropna()
+            X = df_limpio.drop(columns=[self.target_col])
+            y = df_limpio[self.target_col].astype('category')
 
-        X = df_limpio.drop(columns=[self.target_col])
-        y = df_limpio[self.target_col].astype('category')
+            if self.aplicar_binning:
+                for col in X.columns:
+                    if self.var_continua(X[col]):
+                        X[col] = self.hacer_binning(X[col], col)
 
-        if self.aplicar_binning:
-            for col in X.columns:
-                if self.var_continua(X[col]):
-                    X[col] = self.hacer_binning(X[col], col)
+            columnas_categoricas = X.select_dtypes(include=["object", "category"]).columns
+            for col in columnas_categoricas:
+                if X[col].nunique() > 10:
+                    comunes = X[col].value_counts(normalize=True)
+                    comunes = comunes[comunes >= 0.05].index
+                    X[col] = X[col].apply(lambda x: x if x in comunes else "Otro")
 
-        columnas_categoricas = X.select_dtypes(include=["object", "category"]).columns
-        for col in columnas_categoricas:
-            if X[col].nunique() > 10:
-                comunes = X[col].value_counts(normalize=True)
-                comunes = comunes[comunes >= 0.05].index
-                X[col] = X[col].apply(lambda x: x if x in comunes else "Otro")
+            X = pd.get_dummies(X)
 
-        X = pd.get_dummies(X)
-
-        self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
-            X, y, test_size=0.2, random_state=42
-        )
-
-        self.datos_preparados = True
+            self.X_train, self.X_test, self.y_train, self.y_test = train_test_split(
+                X, y, test_size=0.2, random_state=42
+            )
+            self.datos_preparados = True
+        except Exception as e:
+            logger.error(f"Error al preparar los datos: {e}")
+            raise
 
     def entrenar_modelo(self):
         """Entrena el modelo de árbol de decisión"""
@@ -92,23 +93,26 @@ class ArbolDecision:
             raise ValueError("Los datos no han sido preparados.")
 
         self.modelo = DecisionTreeClassifier(random_state=42)
-
         try:
             self.modelo.fit(self.X_train, self.y_train)
             logger.info("Modelo entrenado exitosamente")
-        except ValueError as e:
+        except (ValueError, TypeError, MemoryError) as e:
+            logger.error(f"Error al entrenar el modelo: {e}")
             raise ValueError(f"Error al entrenar el modelo: {e}")
 
     def evaluar_modelo(self):
         """Evalúa el modelo"""
         if self.modelo is None:
             raise ValueError("El modelo no ha sido entrenado.")
-
-        y_pred = self.modelo.predict(self.X_test)
-        acc = accuracy_score(self.y_test, y_pred)
-        rep = classification_report(self.y_test, y_pred, output_dict=True)
-        conf = confusion_matrix(self.y_test, y_pred)
-        return acc, rep, conf
+        try:
+            y_pred = self.modelo.predict(self.X_test)
+            acc = accuracy_score(self.y_test, y_pred)
+            rep = classification_report(self.y_test, y_pred, output_dict=True)
+            conf = confusion_matrix(self.y_test, y_pred)
+            return acc, rep, conf
+        except Exception as e:
+            logger.error(f"Error al evaluar el modelo: {e}")
+            raise
 
     def obtener_importancia_variables(self):
         """Devuelve la importancia de las variables"""
@@ -122,62 +126,70 @@ class ArbolDecision:
         if self.modelo is None:
             logger.error("El modelo no ha sido entrenado")
             raise ValueError("El modelo no ha sido entrenado.")
-
-        fig, ax = plt.subplots(figsize=(20, 12))
-        plot_tree(
-            self.modelo,
-            feature_names=self.X_train.columns,
-            class_names=[str(c) for c in self.modelo.classes_],
-            filled=True,
-            max_depth=max_depth,
-            fontsize=10
-        )
-        plt.title(f"Árbol de Decisión (Profundidad máxima: {max_depth})", fontsize=16, fontweight='bold')
-        plt.tight_layout()
-        return fig
+        try:
+            fig, ax = plt.subplots(figsize=(20, 12))
+            plot_tree(
+                self.modelo,
+                feature_names=self.X_train.columns,
+                class_names=[str(c) for c in self.modelo.classes_],
+                filled=True,
+                max_depth=max_depth,
+                fontsize=10
+            )
+            plt.title(f"Árbol de Decisión (Profundidad máxima: {max_depth})", fontsize=16, fontweight='bold')
+            plt.tight_layout()
+            return fig
+        except Exception as e:
+            logger.error(f"Error al graficar árbol: {e}")
+            raise
 
     def graficar_matriz_confusion(self):
         """Genera la matriz de confusión"""
         if self.modelo is None:
             logger.error("El modelo no ha sido entrenado")
             raise ValueError("El modelo no ha sido entrenado.")
+        try:
+            y_pred = self.modelo.predict(self.X_test)
+            conf = confusion_matrix(self.y_test, y_pred)
+            clases_presentes = np.unique(np.concatenate([self.y_test, y_pred]))
+            conf_df = pd.DataFrame(conf, index=clases_presentes, columns=clases_presentes)
 
-        y_pred = self.modelo.predict(self.X_test)
-        conf = confusion_matrix(self.y_test, y_pred)
-
-        clases_presentes = np.unique(np.concatenate([self.y_test, y_pred]))
-        conf_df = pd.DataFrame(conf, index=clases_presentes, columns=clases_presentes)
-
-        fig, ax = plt.subplots(figsize=(4, 3))
-        sns.heatmap(conf_df, annot=True, fmt='d', cmap="Blues", ax=ax,
-                    square=True, linewidths=0.5, cbar_kws={"shrink": .8})
-        plt.title("Matriz de Confusión", fontsize=16, fontweight='bold')
-        plt.ylabel('Valores Reales', fontsize=12)
-        plt.xlabel('Valores Predichos', fontsize=12)
-        plt.tight_layout()
-        return fig
+            fig, ax = plt.subplots(figsize=(4, 3))
+            sns.heatmap(conf_df, annot=True, fmt='d', cmap="Blues", ax=ax,
+                        square=True, linewidths=0.5, cbar_kws={"shrink": .8})
+            plt.title("Matriz de Confusión", fontsize=16, fontweight='bold')
+            plt.ylabel('Valores Reales', fontsize=12)
+            plt.xlabel('Valores Predichos', fontsize=12)
+            plt.tight_layout()
+            return fig
+        except Exception as e:
+            logger.error(f"Error al graficar matriz de confusión: {e}")
+            raise
 
     def graficar_importancia_variables(self, top_n=10):
         """Grafica la importancia de las variables"""
-        importancias = self.obtener_importancia_variables()
-        if importancias is None:
-            return None
+        try:
+            importancias = self.obtener_importancia_variables()
+            if importancias is None:
+                return None
 
-        top_importancias = importancias.head(top_n)
+            top_importancias = importancias.head(top_n)
+            fig, ax = plt.subplots(figsize=(12, 8))
+            bars = ax.barh(range(len(top_importancias)), top_importancias.values,
+                           color='steelblue', alpha=0.8)
+            ax.set_yticks(range(len(top_importancias)))
+            ax.set_yticklabels(top_importancias.index)
+            ax.set_xlabel('Importancia', fontsize=12)
+            ax.set_title(f'Top {top_n} Variables más Importantes', fontsize=16, fontweight='bold')
+            ax.grid(True, alpha=0.3, axis='x')
 
-        fig, ax = plt.subplots(figsize=(12, 8))
-        bars = ax.barh(range(len(top_importancias)), top_importancias.values,
-                       color='steelblue', alpha=0.8)
-        ax.set_yticks(range(len(top_importancias)))
-        ax.set_yticklabels(top_importancias.index)
-        ax.set_xlabel('Importancia', fontsize=12)
-        ax.set_title(f'Top {top_n} Variables más Importantes', fontsize=16, fontweight='bold')
-        ax.grid(True, alpha=0.3, axis='x')
+            for i, bar in enumerate(bars):
+                width = bar.get_width()
+                ax.text(width + width * 0.01, bar.get_y() + bar.get_height() / 2.,
+                        f'{width:.3f}', ha='left', va='center', fontweight='bold')
 
-        for i, bar in enumerate(bars):
-            width = bar.get_width()
-            ax.text(width + width * 0.01, bar.get_y() + bar.get_height() / 2.,
-                    f'{width:.3f}', ha='left', va='center', fontweight='bold')
-
-        plt.tight_layout()
-        return fig
+            plt.tight_layout()
+            return fig
+        except Exception as e:
+            logger.error(f"Error al graficar importancia de variables: {e}")
+            raise
