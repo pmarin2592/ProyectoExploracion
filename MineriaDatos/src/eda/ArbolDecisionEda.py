@@ -3,7 +3,7 @@ Clase: ArbolDecisionEda
 
 Objetivo: Clase conectora para el Árbol de Decisión
 """
-
+import inspect
 from src.modelos.ArbolDecision import ArbolDecision
 
 class ArbolDecisionEda:
@@ -13,16 +13,24 @@ class ArbolDecisionEda:
         self._arbol_datos.entrenar_modelo()
 
     def evaluar(self):
-        return self._arbol_datos.evaluar_modelo()
+        resultados = self._arbol_datos.evaluar_modelo()
+        codigo = inspect.getsource(self._arbol_datos.__class__.evaluar_modelo)
+        return resultados, codigo
 
     def graficar_matriz_confusion(self):
-        return self._arbol_datos.graficar_matriz_confusion()
+        fig = self._arbol_datos.graficar_matriz_confusion()
+        codigo = inspect.getsource(self._arbol_datos.__class__.graficar_matriz_confusion)
+        return fig, codigo
 
     def graficar_arbol(self, profundidad=3):
-        return self._arbol_datos.graficar_arbol(max_depth=profundidad)
+        fig = self._arbol_datos.graficar_arbol(max_depth=profundidad)
+        codigo = inspect.getsource(self._arbol_datos.__class__.graficar_arbol)
+        return fig, codigo
 
     def obtener_importancia_variables(self):
         return self._arbol_datos.obtener_importancia_variables()
 
     def graficar_importancia_variables(self, top_n=10):
-        return self._arbol_datos.graficar_importancia_variables(top_n=top_n)
+        fig = self._arbol_datos.graficar_importancia_variables(top_n=top_n)
+        codigo = inspect.getsource(self._arbol_datos.__class__.graficar_importancia_variables)
+        return fig, codigo
