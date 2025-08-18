@@ -55,7 +55,6 @@ class PaginaAcerca:
                    - 🐍 **Lenguaje de Programación:** Python  
                    - 📊 **Librerías de Análisis de Datos:** Pandas, NumPy  
                    - 📈 **Visualización de Datos:** Matplotlib, Seaborn, Plotly  
-                   - 🚀 **Framework/Entorno:** Streamlit  
-                   - 🗄️ **Base de Datos:** PostgreSQL  
+                   - 🚀 **Framework/Entorno:** Streamlit   
                    - 💻 **Otras Herramientas:** Jupyter Notebooks, Microsoft Azure
                    """)
