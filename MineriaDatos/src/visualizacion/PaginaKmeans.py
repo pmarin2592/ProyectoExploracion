@@ -4,7 +4,10 @@ import plotly.graph_objects as go
 import plotly.express as px
 from modelos.Kmeans import Kmeans, Clustering
 from kneed import KneeLocator
+import inspect
+import logging
 
+logger = logging.getLogger(__name__)
 
 class PaginaKmeans:
     def __init__(self):
@@ -59,7 +62,12 @@ class PaginaKmeans:
         self.kmeans_obj = Kmeans(datos_escalados)
 
         # Crear pestañas
-        tab1, tab2, tab3, tab4 = st.tabs(["K-means Automático", "Clustering Manual", "Datos", "Selecciona Cluster"])
+        tab1, tab2, tab3, tab4 = st.tabs([
+            "K-means Automático",
+            "Clustering Manual",
+            "Selecciona Cluster",
+            "Código Fuente"
+        ])
 
         # ---------- TAB 1: Codo Jambu ----------
         with tab1:
@@ -97,33 +105,27 @@ class PaginaKmeans:
         # ---------- TAB 2: Clusters ----------
         with tab2:
             st.subheader("🔹 Clusters")
-
             k_cluster = st.slider("Elige número de clusters para el análisis manual", 2, 10, 3, key="slider_clustering")
 
-            # 🔹 Limpiar filas con nulos directamente en df_numerico
+            # Limpiar filas con nulos
             self.cluster_manual.df_numerico = self.cluster_manual.df_numerico.dropna(how='any')
 
             resultados = self.cluster_manual.clustering_kmeans(k=k_cluster)
 
-            # Crear etiquetas completas solo para índices existentes
             etiquetas_completas_manual = pd.Series(data=resultados['etiquetas'],
                                                    index=self.cluster_manual.df_numerico.index)
             self.df = self.df.drop(columns=['Cluster_Manual'], errors='ignore')
             self.df.loc[etiquetas_completas_manual.index, 'Cluster_Manual'] = etiquetas_completas_manual
 
-            # Construir DataFrame para graficar
+            # DataFrame para graficar
             df_plot = self.cluster_manual.df_numerico.copy()
             df_plot['Cluster'] = resultados['etiquetas']
 
-            # Selección de columnas para scatter
             columnas_graf = df_plot.columns[:2]
-
-            # Paleta de colores consistente
             palette = px.colors.qualitative.Set1 + px.colors.qualitative.Set2 + px.colors.qualitative.Set3
-            colores = {cluster: palette[i % len(palette)] for i, cluster in
-                       enumerate(sorted(df_plot['Cluster'].unique()))}
+            colores = {cluster: palette[i % len(palette)] for i, cluster in enumerate(sorted(df_plot['Cluster'].unique()))}
 
-            # Crear gráfico
+            # Scatter plot
             fig_clusters = go.Figure()
             for cluster in sorted(df_plot['Cluster'].unique()):
                 df_cluster = df_plot[df_plot['Cluster'] == cluster]
@@ -135,49 +137,39 @@ class PaginaKmeans:
                     marker=dict(size=8, color=colores[cluster])
                 ))
 
-            # Conteo por cluster como anotaciones (blanco para fondo oscuro)
-            conteos = df_plot['Cluster'].value_counts().to_dict()
-            anotaciones = []
-            offset = 0
-            for cluster, count in sorted(conteos.items()):
-                anotaciones.append(dict(
-                    x=-0.02,
-                    y=1 - offset,
-                    xref='paper',
-                    yref='paper',
-                    text=f"Cluster {cluster}: {count} pts",
-                    showarrow=False,
-                    font=dict(size=12, color='white'),
-                    align='left'
-                ))
-                offset += 0.08
-
             fig_clusters.update_layout(
                 title="Clustering Manual",
                 xaxis_title=columnas_graf[0],
                 yaxis_title=columnas_graf[1],
-                annotations=anotaciones,
                 template='plotly_white',
                 height=500,
-                margin=dict(l=120)
             )
-
             st.plotly_chart(fig_clusters, use_container_width=True)
 
-        # ---------- TAB 3: Datos ----------
-        with tab3:
-            st.subheader("🔹 Datos")
-            columnas_a_mostrar = columnas_numericas.copy()
-            if 'df_clusterizado' in st.session_state and 'Cluster_Manual' in st.session_state[
-                'df_clusterizado'].columns:
-                columnas_a_mostrar = ['Cluster_Manual'] + columnas_a_mostrar
-            st.dataframe(self.df[columnas_a_mostrar])
+            # Gráfico de barras con conteos
+            conteos = df_plot['Cluster'].value_counts().sort_index()
+            fig_barras = go.Figure()
+            for cluster, count in conteos.items():
+                fig_barras.add_trace(go.Bar(
+                    x=[f"Cluster {cluster}"],
+                    y=[count],
+                    name=f'Cluster {cluster}',
+                    marker_color=colores[cluster]
+                ))
+            fig_barras.update_layout(
+                title="Número de puntos por Cluster",
+                xaxis_title="Cluster",
+                yaxis_title="Cantidad de puntos",
+                template='plotly_white',
+                height=400,
+                showlegend=True
+            )
+            st.plotly_chart(fig_barras, use_container_width=True)
 
-        # ---------- TAB 4: Selecciona Cluster ----------
-        with tab4:
+        # ---------- TAB 3: Selecciona Cluster ----------
+        with tab3:
             st.subheader("🔹 Selecciona Cluster")
             if 'Cluster_Manual' in self.df.columns:
-                # 🔹 Solo usar valores válidos (sin NaN o None)
                 clusters_validos = self.df['Cluster_Manual'].dropna().unique()
                 clusters_validos.sort()
                 cluster_seleccionado = st.selectbox("Selecciona un cluster", clusters_validos)
@@ -185,5 +177,14 @@ class PaginaKmeans:
             else:
                 st.info("❌ No hay clusters manuales asignados. Ve al TAB 'Clusters' para generar los clusters primero.")
 
+        # ---------- TAB 4: Código Fuente ----------
+        with tab4:
+            st.subheader("📄 Código Generado")
 
+            try:
+                # Obtener todo el código de la clase PaginaKmeans
+                codigo_completo = inspect.getsource(PaginaKmeans)
+                st.code(codigo_completo, language="python")
+            except Exception as e:
+                st.warning(f"Error mostrando código: {str(e)}")
 
