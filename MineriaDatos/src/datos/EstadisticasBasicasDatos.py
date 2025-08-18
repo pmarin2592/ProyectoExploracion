@@ -5,6 +5,8 @@ Objetivo: Clase enfocada a la codificacion de la data para el EDA basico
 
 1. Creacion de clase pmarin 15-07-2024
 """
+import inspect
+
 import numpy as np
 import pandas as pd
 import io
@@ -717,9 +719,9 @@ class EstadisticasBasicasDatos:
                 raise ValueError(f"La columna '{col}' contiene solo valores nulos")
 
             if col in self.numericas:
-                return self._grafico_qplot(col)
+                return self._grafico_qplot(col) , inspect.getsource(self._grafico_qplot)
             elif col in self.categoricas:
-                return self._grafico_categorico(col)
+                return self._grafico_categorico(col), inspect.getsource(self._grafico_categorico)
             else:
                 logger.warning(f"La columna '{col}' no está definida como numérica ni categórica")
                 return None

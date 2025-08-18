@@ -3,8 +3,10 @@ Clase: EstadisticasBasicasEda
 
 Objetivo: Clase enfocada a la muestra de datos para EDA
 
-1. Creacion de clase pmarin 15-07-2024
+1. Creacion de clase pmarin 15-07-2025
+2. Se genera return doble para que devuevle grafico y codigo pmarin 15-08-2025
 """
+import inspect
 
 from src.datos.EstadisticasBasicasDatos import EstadisticasBasicasDatos
 
@@ -40,14 +42,15 @@ class EstadisticasBasicasEda:
         return self.eda.obtener_nombres_columnas()
 
     def  obtener_analisis_distribucion(self,col):
-        return self.eda.obtener_analisis_distribucion(col)
+        return self.eda.obtener_analisis_distribucion(col), inspect.getsource(self.eda.obtener_analisis_distribucion)
 
     def obtener_analisis_boxplot(self,col):
-        return self.eda.obtener_analisis_boxplot(col)
+        return self.eda.obtener_analisis_boxplot(col), inspect.getsource(self.eda.obtener_analisis_boxplot)
 
     def obtener_analisis_correlaccion(self):
-        return self.eda.obtener_analisis_correlaccion()
+        return self.eda.obtener_analisis_correlaccion() , inspect.getsource(self.eda.obtener_analisis_correlaccion)
 
     def obtener_analisis_univariados(self, col):
-        return self.eda.obtener_analisis_univariados(col)
+        fig , codigo = self.eda.obtener_analisis_univariados(col)
+        return fig, codigo
 

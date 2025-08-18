@@ -9,7 +9,10 @@ Cambios:
     3. Optimización completa del código - Versión optimizada
     4. Cambios en UI aquesada 02-08-25
     5. Eliminación del selector de vista y título principal "Análisis Completo"
+    6. Se agrega codigo de graficos pmarin 15-08-2025
 """
+import inspect
+
 import pandas as pd
 import streamlit as st
 import logging
@@ -566,9 +569,15 @@ class PaginaEstadisticas:
 
                         if tipo_grafico == "Distribucciones":
                             try:
-                                fig = self.eda.obtener_analisis_distribucion(columna)
+                                fig, codigo = self.eda.obtener_analisis_distribucion(columna)
                                 if fig is not None:
                                     st.pyplot(fig)
+                                    try:
+                                        with st.expander("📋 **Ver Código Gráfico**"):
+                                            st.subheader("📄 Código generado:")
+                                            st.code(codigo, language="python")
+                                    except Exception as e:
+                                        logger.warning(f"Error en expander de código: {str(e)}")
                                 else:
                                     st.warning("No se pudo generar el gráfico de distribución")
                             except Exception as e:
@@ -577,9 +586,15 @@ class PaginaEstadisticas:
 
                         elif tipo_grafico == "Boxplot":
                             try:
-                                fig = self.eda.obtener_analisis_boxplot(columna)
+                                fig, codigo = self.eda.obtener_analisis_boxplot(columna)
                                 if fig is not None:
                                     st.plotly_chart(fig, use_container_width=True)
+                                    try:
+                                        with st.expander("📋 **Ver Código Gráfico**"):
+                                            st.subheader("📄 Código generado:")
+                                            st.code(codigo, language="python")
+                                    except Exception as e:
+                                        logger.warning(f"Error en expander de código: {str(e)}")
                                 else:
                                     st.warning("No se pudo generar el boxplot")
                             except Exception as e:
@@ -588,9 +603,15 @@ class PaginaEstadisticas:
 
                         elif tipo_grafico == "Matriz de Correlación":
                             try:
-                                fig = self.eda.obtener_analisis_correlaccion()
+                                fig, codigo = self.eda.obtener_analisis_correlaccion()
                                 if fig is not None:
                                     st.pyplot(fig, use_container_width=True)
+                                    try:
+                                        with st.expander("📋 **Ver Código Gráfico**"):
+                                            st.subheader("📄 Código generado:")
+                                            st.code(codigo, language="python")
+                                    except Exception as e:
+                                        logger.warning(f"Error en expander de código: {str(e)}")
                                 else:
                                     st.warning("No se pudo generar la matriz de correlación")
                             except Exception as e:
@@ -599,9 +620,15 @@ class PaginaEstadisticas:
 
                         elif tipo_grafico == "Univariado":
                             try:
-                                fig = self.eda.obtener_analisis_univariados(columna)
+                                fig, codigo = self.eda.obtener_analisis_univariados(columna)
                                 if fig is not None:
                                     st.pyplot(fig, use_container_width=True)
+                                    try:
+                                        with st.expander("📋 **Ver Código Gráfico**"):
+                                            st.subheader("📄 Código generado:")
+                                            st.code(codigo, language="python")
+                                    except Exception as e:
+                                        logger.warning(f"Error en expander de código: {str(e)}")
                                 else:
                                     st.warning("No se pudo generar el análisis univariado")
                             except Exception as e:
