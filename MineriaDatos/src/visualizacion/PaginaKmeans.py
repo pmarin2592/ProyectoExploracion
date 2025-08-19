@@ -177,17 +177,27 @@ class PaginaKmeans:
             else:
                 st.info("❌ No hay clusters manuales asignados. Ve al TAB 'Clusters' para generar los clusters primero.")
 
+
+        # ---------- TAB 4: Código Fuente ----------
         # ---------- TAB 4: Código Fuente ----------
         with tab4:
-            st.subheader("📄 Código Generado")
-
+            st.subheader("📄 Código de Gráficos")
             try:
-                # Obtener todo el código de la clase PaginaKmeans
-                codigo_completo = inspect.getsource(PaginaKmeans)
-                st.code(codigo_completo, language="python")
+                import re
+                # Obtener todo el código del método render
+                codigo_render = inspect.getsource(self.render)
+
+                # Extraer solo la parte de TAB 1 y TAB 2 (entre los comentarios)
+                patron = r"# ---------- TAB 1: Codo Jambu ----------(.*?)# ---------- TAB 3:"
+                codigo_graficos = re.search(patron, codigo_render, re.DOTALL)
+
+                if codigo_graficos:
+                    # group(1) omite la línea de TAB 3
+                    st.code(codigo_graficos.group(1), language="python")
+                else:
+                    st.warning("No se pudo extraer el código de los gráficos.")
             except Exception as e:
                 st.warning(f"Error mostrando código: {str(e)}")
-
 
 
 
