@@ -54,6 +54,10 @@ class PaginaArbolDecision(PaginaDatos):
         ]
         st.info(f"Usando {len(columnas_predictoras)} variables predictoras")
 
+        if len(columnas_predictoras) == 0:
+            st.error("❌ Se excluyeron todas las variables. Debes elegir al menos una columna para predecir.")
+            return
+
         try:
             df_modelo = df[columnas_predictoras + [target_col]].copy()
         except KeyError as e:
