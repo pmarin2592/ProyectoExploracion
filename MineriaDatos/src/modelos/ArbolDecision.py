@@ -83,7 +83,7 @@ class ArbolDecision:
             )
             self.datos_preparados = True
         except Exception as e:
-            logger.error(f"Error al preparar los datos: {e}")
+            logger.error(f"Error al preparar los datos. {e}")
             raise
 
     def entrenar_modelo(self):
@@ -97,8 +97,8 @@ class ArbolDecision:
             self.modelo.fit(self.X_train, self.y_train)
             logger.info("Modelo entrenado exitosamente")
         except (ValueError, TypeError, MemoryError) as e:
-            logger.error(f"Error al entrenar el modelo: {e}")
-            raise ValueError(f"Error al entrenar el modelo: {e}")
+            logger.error(f"Error al entrenar el modelo")
+            raise ValueError(f"Error al entrenar el modelo")
 
     def evaluar_modelo(self):
         """Evalúa el modelo"""
@@ -111,7 +111,7 @@ class ArbolDecision:
             conf = confusion_matrix(self.y_test, y_pred)
             return acc, rep, conf
         except Exception as e:
-            logger.error(f"Error al evaluar el modelo: {e}")
+            logger.error(f"Error al evaluar el modelo")
             raise
 
     def obtener_importancia_variables(self):
@@ -140,7 +140,7 @@ class ArbolDecision:
             plt.tight_layout()
             return fig
         except Exception as e:
-            logger.error(f"Error al graficar árbol: {e}")
+            logger.error(f"Error al graficar árbol")
             raise
 
     def graficar_matriz_confusion(self):
@@ -163,7 +163,7 @@ class ArbolDecision:
             plt.tight_layout()
             return fig
         except Exception as e:
-            logger.error(f"Error al graficar matriz de confusión: {e}")
+            logger.error(f"Error al graficar matriz de confusión")
             raise
 
     def graficar_importancia_variables(self, top_n=10):
@@ -191,5 +191,5 @@ class ArbolDecision:
             plt.tight_layout()
             return fig
         except Exception as e:
-            logger.error(f"Error al graficar importancia de variables: {e}")
+            logger.error(f"Error al graficar importancia de variables")
             raise
